@@ -294,7 +294,20 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const [localStream, setLocalStream] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
   const [currentCall, setCurrentCall] = useState(null);
+
+  useEffect(() => {
+    if (videoState === "active" && localVideoRef.current && localStream) {
+      localVideoRef.current.srcObject = localStream;
+    }
+  }, [videoState, localStream]);
+
+  useEffect(() => {
+    if (videoState === "active" && remoteVideoRef.current && remoteStream) {
+      remoteVideoRef.current.srcObject = remoteStream;
+    }
+  }, [videoState, remoteStream]);
   
   const anonymousPartnerName = "Student"
 
@@ -362,19 +375,24 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
       setPeer(newPeer);
 
       newPeer.on("call", (call) => {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+              alert("Your browser does not support video calls.");
+              return;
+          }
           navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
               setLocalStream(stream);
-              if(localVideoRef.current) localVideoRef.current.srcObject = stream;
+              setVideoState("active");
               
               call.answer(stream); // Answer the call with an A/V stream.
               setCurrentCall(call);
               
-              setVideoState("active");
-              call.on("stream", (remoteStream) => {
-                  if(remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
+              call.on("stream", (incomingStream) => {
+                  setRemoteStream(incomingStream);
               });
           }).catch((err) => {
               console.error("Failed to get local stream", err);
+              alert("Camera access denied or device not found: " + err.message);
+              setVideoState("idle");
           });
       });
 
@@ -390,6 +408,7 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
             localStream.getTracks().forEach(track => track.stop());
             setLocalStream(null);
         }
+        setRemoteStream(null);
         setMessages(m => [...m, { from: "system", text: "Video call ended.", time: new Date() }]);
   }
 
@@ -420,25 +439,31 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
   }
 
   function startPeerCall() {
+     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+         alert("Your browser does not support video calls.");
+         setVideoState("idle");
+         return;
+     }
      navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
         setLocalStream(stream);
-        if(localVideoRef.current) localVideoRef.current.srcObject = stream;
+        setVideoState("active");
         
         const call = peer.call(partnerId, stream);
         setCurrentCall(call);
 
-        setVideoState("active");
-        call.on("stream", (remoteStream) => {
-             if(remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
+        call.on("stream", (incomingStream) => {
+             setRemoteStream(incomingStream);
         });
      }).catch(err => {
          console.error("Error accessing media devices", err);
+         alert("It looks like you don't have a camera or blocked the permission. Error: " + err.message);
+         setVideoState("idle");
      });
   }
 
   function acceptIncoming() {
     setIncomingVideo(false);
-    setVideoState("active");
+    setVideoState("requesting");
     socket.emit("video_accept", { room });
   }
   
