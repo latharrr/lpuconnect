@@ -438,6 +438,7 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
 
   function acceptIncoming() {
     setIncomingVideo(false);
+    setVideoState("active");
     socket.emit("video_accept", { room });
   }
   
