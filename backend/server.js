@@ -187,8 +187,33 @@ io.on('connection', (socket) => {
     socket.to(data.room).emit('friend_request');
   });
 
-  socket.on('friend_accept', (data) => {
+  socket.on('friend_accept', async (data) => {
     socket.to(data.room).emit('friend_accept');
+    
+    // Save to database as mutual friends when identities actually reveal
+    const roomData = activeRooms.get(data.room);
+    if (roomData) {
+        let u1, u2;
+        if (roomData.users) {
+            // Direct room format
+            const emails = Object.keys(roomData.users);
+            u1 = emails[0]; u2 = emails[1];
+        } else {
+            // Match room format
+            u1 = roomData.user1; u2 = roomData.user2;
+        }
+        
+        if (u1 && u2) {
+            try {
+                // Insert both directions
+                await dbrun(`INSERT OR IGNORE INTO friends (user_id_1, user_id_2) VALUES (?, ?)`, [u1, u2]);
+                await dbrun(`INSERT OR IGNORE INTO friends (user_id_1, user_id_2) VALUES (?, ?)`, [u2, u1]);
+                console.log(`Saved mutual friendship between ${u1} and ${u2}`);
+            } catch (err) {
+                console.error("Error saving friendship:", err);
+            }
+        }
+    }
   });
 
   socket.on('friend_reject', (data) => {
@@ -200,22 +225,8 @@ io.on('connection', (socket) => {
       socket.to(data.room).emit('enjoy_request');
   });
 
-  socket.on('enjoy_accept', async (data) => {
+  socket.on('enjoy_accept', (data) => {
       socket.to(data.room).emit('enjoy_accept');
-      
-      // Save to database as mutual friends
-      const roomData = activeRooms.get(data.room);
-      if (roomData) {
-          const { user1, user2 } = roomData;
-          try {
-              // Insert both directions
-              await dbrun(`INSERT OR IGNORE INTO friends (user_id_1, user_id_2) VALUES (?, ?)`, [user1, user2]);
-              await dbrun(`INSERT OR IGNORE INTO friends (user_id_1, user_id_2) VALUES (?, ?)`, [user2, user1]);
-              console.log(`Saved mutual friendship between ${user1} and ${user2}`);
-          } catch (err) {
-              console.error("Error saving friendship:", err);
-          }
-      }
   });
 
   // Timer extension signaling
