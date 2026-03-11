@@ -377,9 +377,9 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
           config: {
               iceServers: [
                   { urls: 'stun:stun.l.google.com:19302' },
-                  { urls: 'stun:stun1.l.google.com:19302' },
-                  { urls: 'stun:stun2.l.google.com:19302' }
-              ]
+                  { urls: 'stun:global.stun.twilio.com:3478' }
+              ],
+              sdpSemantics: 'unified-plan'
           }
       });
       peerRef.current = newPeer;
@@ -400,7 +400,10 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
               alert("Your browser does not support video calls.");
               return;
           }
-          navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
+          navigator.mediaDevices.getUserMedia({
+              video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 } },
+              audio: true
+          }).then((stream) => {
               console.log("[WebRTC] Incoming Call: Acquired local microphone/camera stream.");
               setLocalStream(stream);
               setVideoState("active");
@@ -482,7 +485,10 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
          setVideoState("idle");
          return;
      }
-     navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
+     navigator.mediaDevices.getUserMedia({
+         video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 } },
+         audio: true
+     }).then((stream) => {
         console.log("[WebRTC] Outgoing Call: Acquired local microphone/camera stream.");
         setLocalStream(stream);
         setVideoState("active");

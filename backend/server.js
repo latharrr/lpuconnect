@@ -40,24 +40,17 @@ io.on('connection', (socket) => {
         socket.join(roomName);
         waitingUser.socket.join(roomName);
         
-        // Notify both users that they are connected
-        io.to(roomName).emit('matched', {
-            room: roomName,
-            partnerId: peerId,
-            partnerEmail: waitingUser.email
-        });
-        
         // Send to waiting user specifically that they matched with the new user
         waitingUser.socket.emit('matched', {
             room: roomName,
-            partnerId: peerId,
+            partnerId: peerId, // the ID of the new user joining
             partnerEmail: email
         });
 
         // Send to new user specifically that they matched with the waiting user
         socket.emit('matched', {
             room: roomName,
-            partnerId: waitingUser.peerId,
+            partnerId: waitingUser.peerId, // the ID of the user already waiting
             partnerEmail: waitingUser.email
         });
         
