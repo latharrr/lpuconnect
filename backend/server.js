@@ -29,7 +29,7 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   socket.on('start_chat', (data) => {
-    const { email, peerId } = data;
+    const { email, peerId, name, gender } = data;
     
     // Check if someone is waiting in the queue and it's NOT the same user
     if (waitingUser && waitingUser.peerId !== peerId) {
@@ -44,14 +44,18 @@ io.on('connection', (socket) => {
         waitingUser.socket.emit('matched', {
             room: roomName,
             partnerId: peerId, // the ID of the new user joining
-            partnerEmail: email
+            partnerEmail: email,
+            partnerName: name,
+            partnerGender: gender
         });
 
         // Send to new user specifically that they matched with the waiting user
         socket.emit('matched', {
             room: roomName,
             partnerId: waitingUser.peerId, // the ID of the user already waiting
-            partnerEmail: waitingUser.email
+            partnerEmail: waitingUser.email,
+            partnerName: waitingUser.name,
+            partnerGender: waitingUser.gender
         });
         
         // Reset queue
@@ -62,7 +66,9 @@ io.on('connection', (socket) => {
         waitingUser = {
             socket,
             email,
-            peerId
+            peerId,
+            name,
+            gender
         };
         console.log(`User ${email} waiting for match with peerId ${peerId}`);
     }
@@ -79,6 +85,19 @@ io.on('connection', (socket) => {
       // Notify partner
       socket.to(room).emit('partner_skipped');
       socket.leave(room);
+  });
+  
+  // Friend system signaling
+  socket.on('friend_request', (data) => {
+    socket.to(data.room).emit('friend_request');
+  });
+
+  socket.on('friend_accept', (data) => {
+    socket.to(data.room).emit('friend_accept');
+  });
+
+  socket.on('friend_reject', (data) => {
+    socket.to(data.room).emit('friend_reject');
   });
   
   // WebRTC signaling

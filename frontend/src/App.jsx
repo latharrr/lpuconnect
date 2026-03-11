@@ -45,6 +45,8 @@ function LandingScreen({ onStart }) {
   const [tagIdx, setTagIdx] = useState(0);
   const [visible, setVisible] = useState(true);
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [gender, setGender] = useState("");
   const [error, setError] = useState("");
   const [pulse, setPulse] = useState(false);
 
@@ -136,6 +138,41 @@ function LandingScreen({ onStart }) {
         </div>
 
         <div style={{ marginBottom: 12 }}>
+          <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+            <input
+              type="text"
+              placeholder="First Name"
+              value={name}
+              onChange={e => { setName(e.target.value); setError(""); }}
+              style={{
+                flex: 1, padding: "16px 20px", boxSizing: "border-box",
+                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 12, color: "#f0ede8", fontSize: 14, outline: "none",
+                fontFamily: "'Space Mono', monospace",
+                transition: "border-color 0.2s"
+              }}
+              onFocus={e => e.target.style.borderColor = "rgba(255,107,53,0.5)"}
+              onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
+            />
+            <select
+               value={gender}
+               onChange={e => { setGender(e.target.value); setError(""); }}
+               style={{
+                flex: 1, padding: "16px 20px", boxSizing: "border-box",
+                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 12, color: gender ? "#f0ede8" : "#888", fontSize: 14, outline: "none",
+                fontFamily: "'Space Mono', monospace", appearance: "none",
+                transition: "border-color 0.2s"
+               }}
+               onFocus={e => e.target.style.borderColor = "rgba(255,107,53,0.5)"}
+               onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
+            >
+               <option value="" disabled hidden>Gender</option>
+               <option value="Male" style={{ color: "black" }}>Male</option>
+               <option value="Female" style={{ color: "black" }}>Female</option>
+               <option value="Other" style={{ color: "black" }}>Other</option>
+            </select>
+          </div>
           <input
             type="text"
             placeholder="reg@lpu.in  or  11234567"
@@ -178,7 +215,7 @@ function LandingScreen({ onStart }) {
 }
 
 // ─── SCREEN: MATCHING ─────────────────────────────────────────────────────────
-function MatchingScreen({ userEmail, onMatched, onCancel }) {
+function MatchingScreen({ userEmail, userName, userGender, onMatched, onCancel }) {
   const [dots, setDots] = useState(".");
   const [queuePos, setQueuePos] = useState(0);
 
@@ -187,10 +224,10 @@ function MatchingScreen({ userEmail, onMatched, onCancel }) {
 
     // Send the sanitized peerId we will be using
     const safePeerId = socket.id.replace(/[^a-zA-Z0-9]/g, "");
-    socket.emit("start_chat", { email: userEmail, peerId: safePeerId });
+    socket.emit("start_chat", { email: userEmail, peerId: safePeerId, name: userName, gender: userGender });
     
     socket.on("matched", (data) => {
-        onMatched(data.partnerEmail, data.room, data.partnerId);
+        onMatched(data.partnerEmail, data.room, data.partnerId, data.partnerName, data.partnerGender);
     });
 
     return () => { 
@@ -256,7 +293,7 @@ function MatchingScreen({ userEmail, onMatched, onCancel }) {
           borderRadius: 12, padding: "12px 24px", display: "inline-block", marginBottom: 32
         }}>
           <span style={{ color: "#444", fontSize: 11, letterSpacing: "0.1em" }}>LOGGED IN AS </span>
-          <span style={{ color: "#ff6b35", fontSize: 11 }}>{userEmail}</span>
+          <span style={{ color: "#ff6b35", fontSize: 11 }}>{userName} ({userEmail})</span>
         </div>
 
         <div>
@@ -278,7 +315,7 @@ function MatchingScreen({ userEmail, onMatched, onCancel }) {
 }
 
 // ─── SCREEN: CHAT ─────────────────────────────────────────────────────────────
-function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
+function ChatScreen({ userEmail, userName, userGender, partner, partnerName, partnerGender, room, partnerId, onSkip, onEnd }) {
   const [messages, setMessages] = useState([
     { from: "system", text: `Connected with an anonymous student. Say hello!`, time: new Date() }
   ]);
@@ -288,6 +325,10 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
   const [reported, setReported] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [incomingVideo, setIncomingVideo] = useState(false);
+  
+  const [friendState, setFriendState] = useState("none"); // none | sent | received | friends
+  const [isMuted, setIsMuted] = useState(false);
+  const [isCameraOff, setIsCameraOff] = useState(false);
   
   const messagesEndRef = useRef(null);
   const peerRef = useRef(null);
@@ -310,7 +351,7 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
     }
   }, [videoState, remoteStream]);
   
-  const anonymousPartnerName = "Student"
+  const DisplayPartnerName = friendState === "friends" ? partnerName : "Student";
 
 
   // Auto-scroll
@@ -354,6 +395,20 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
         closeVideoAndStreams();
     });
 
+    socket.on("friend_request", () => {
+        setFriendState("received");
+    });
+
+    socket.on("friend_accept", () => {
+        setFriendState("friends");
+        setMessages(m => [...m, { from: "system", text: `Friend request accepted! True identities revealed.`, time: new Date() }]);
+    });
+
+    socket.on("friend_reject", () => {
+        setFriendState("none");
+        setMessages(m => [...m, { from: "system", text: `Friend request declined.`, time: new Date() }]);
+    });
+
     return () => {
         socket.off("receive_message");
         socket.off("partner_skipped");
@@ -361,6 +416,9 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
         socket.off("video_accept");
         socket.off("video_reject");
         socket.off("end_video");
+        socket.off("friend_request");
+        socket.off("friend_accept");
+        socket.off("friend_reject");
     };
   }, []);
 
@@ -527,6 +585,44 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
       socket.emit("video_reject", { room });
   }
 
+  function sendFriendRequest() {
+      setFriendState("sent");
+      socket.emit("friend_request", { room });
+      setMessages(m => [...m, { from: "system", text: "Friend request sent.", time: new Date() }]);
+  }
+
+  function acceptFriendRequest() {
+      setFriendState("friends");
+      socket.emit("friend_accept", { room });
+      setMessages(m => [...m, { from: "system", text: `You accepted the friend request! True identities revealed.`, time: new Date() }]);
+  }
+
+  function rejectFriendRequest() {
+      setFriendState("none");
+      socket.emit("friend_reject", { room });
+      setMessages(m => [...m, { from: "system", text: "Friend request declined.", time: new Date() }]);
+  }
+
+  function toggleMute() {
+     if (localStream) {
+         const audioTrack = localStream.getAudioTracks()[0];
+         if (audioTrack) {
+             audioTrack.enabled = !audioTrack.enabled;
+             setIsMuted(!audioTrack.enabled);
+         }
+     }
+  }
+
+  function toggleVideo() {
+     if (localStream) {
+         const videoTrack = localStream.getVideoTracks()[0];
+         if (videoTrack) {
+             videoTrack.enabled = !videoTrack.enabled;
+             setIsCameraOff(!videoTrack.enabled);
+         }
+     }
+  }
+
   const fmt = (d) => d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   const mins = String(Math.floor(timer / 60)).padStart(2, "0");
   const secs = String(timer % 60).padStart(2, "0");
@@ -552,14 +648,39 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
         display: "flex", alignItems: "center", gap: 12, background: "rgba(8,8,8,0.95)",
         backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10
       }}>
-        <Avatar name={anonymousPartnerName} size={40} />
+        <Avatar name={DisplayPartnerName} size={40} />
         <div style={{ flex: 1 }}>
-          <div style={{ color: "#f0ede8", fontSize: 14, fontWeight: 700 }}>{anonymousPartnerName}</div>
+          <div style={{ color: "#f0ede8", fontSize: 14, fontWeight: 700 }}>
+            {DisplayPartnerName} 
+            {friendState === "friends" && <span style={{fontSize: 11, color: "#888", marginLeft: 8, fontWeight: 'normal'}}>({partnerGender})</span>}
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1a936f", display: "inline-block" }} />
             <span style={{ color: "#1a936f", fontSize: 10, letterSpacing: "0.08em" }}>ONLINE · LPU VERIFIED</span>
           </div>
         </div>
+
+        {friendState === "none" && (
+            <button onClick={sendFriendRequest} style={{
+              background: "rgba(255,107,53,0.1)", border: "1px solid rgba(255,107,53,0.3)", color: "#ff6b35",
+              padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 700,
+              fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em", transition: "all 0.2s"
+            }}
+              onMouseEnter={e => { e.target.style.background = "rgba(255,107,53,0.2)"; }}
+              onMouseLeave={e => { e.target.style.background = "rgba(255,107,53,0.1)"; }}
+            >
+              + ADD FRIEND
+            </button>
+        )}
+        {friendState === "sent" && (
+            <div style={{
+              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#888",
+              padding: "6px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+              fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em"
+            }}>
+              REQUEST SENT
+            </div>
+        )}
 
         <div style={{
           background: timer < 60 ? "rgba(200,50,50,0.15)" : "rgba(255,255,255,0.05)",
@@ -626,18 +747,36 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
       )}
       {videoState === "active" && (
         <div style={{ padding: "8px 16px", display: "flex", gap: 8, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          {[["🎤", "Mute"], ["📷", "Camera"], ["📞", "End Call"]].map(([icon, label]) => (
-             <button key={label} onClick={label === "End Call" ? endVideo : undefined} style={{
-              background: label === "End Call" ? "rgba(196,50,50,0.15)" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${label === "End Call" ? "rgba(196,50,50,0.3)" : "rgba(255,255,255,0.08)"}`,
-              color: label === "End Call" ? "#c43232" : "#666",
+          <button onClick={toggleMute} style={{
+              background: isMuted ? "rgba(196,50,50,0.15)" : "rgba(255,255,255,0.04)",
+              border: `1px solid ${isMuted ? "rgba(196,50,50,0.3)" : "rgba(255,255,255,0.08)"}`,
+              color: isMuted ? "#c43232" : "#666",
               padding: "8px 14px", borderRadius: 8, cursor: "pointer",
               fontFamily: "'Space Mono', monospace", fontSize: 11,
               display: "flex", alignItems: "center", gap: 6
-             }}>
-                 {icon} {label}
-             </button>
-          ))}
+          }}>
+              🎤 {isMuted ? "Unmute" : "Mute"}
+          </button>
+          <button onClick={toggleVideo} style={{
+              background: isCameraOff ? "rgba(196,50,50,0.15)" : "rgba(255,255,255,0.04)",
+              border: `1px solid ${isCameraOff ? "rgba(196,50,50,0.3)" : "rgba(255,255,255,0.08)"}`,
+              color: isCameraOff ? "#c43232" : "#666",
+              padding: "8px 14px", borderRadius: 8, cursor: "pointer",
+              fontFamily: "'Space Mono', monospace", fontSize: 11,
+              display: "flex", alignItems: "center", gap: 6
+          }}>
+              📷 {isCameraOff ? "Turn On" : "Camera"}
+          </button>
+          <button onClick={endVideo} style={{
+              background: "rgba(196,50,50,0.15)",
+              border: "1px solid rgba(196,50,50,0.3)",
+              color: "#c43232",
+              padding: "8px 14px", borderRadius: 8, cursor: "pointer",
+              fontFamily: "'Space Mono', monospace", fontSize: 11,
+              display: "flex", alignItems: "center", gap: 6
+          }}>
+              📞 End Call
+          </button>
         </div>
       )}
 
@@ -647,6 +786,31 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
         display: "flex", flexDirection: "column", gap: 12,
         minHeight: 0
       }}>
+        {friendState === "received" && (
+            <div style={{
+              background: "rgba(255,107,53,0.1)", border: "1px solid rgba(255,107,53,0.3)",
+              borderRadius: 12, padding: "16px", marginBottom: 16,
+              display: "flex", flexDirection: "column", gap: 12,
+              animation: "fadeUp 0.3s ease"
+            }}>
+              <div style={{ color: "#f0ede8", fontSize: 13, fontWeight: 700 }}>
+                {anonymousPartnerName} wants to be friends and reveal identities.
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={acceptFriendRequest} style={{
+                  flex: 1, padding: "8px", background: "#ff6b35", color: "#0a0a0a",
+                  fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer",
+                  fontFamily: "'Space Mono', monospace", fontSize: 11
+                }}>ACCEPT</button>
+                <button onClick={rejectFriendRequest} style={{
+                  flex: 1, padding: "8px", background: "rgba(255,255,255,0.05)", color: "#888",
+                  fontWeight: 700, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer",
+                  fontFamily: "'Space Mono', monospace", fontSize: 11
+                }}>DECLINE</button>
+              </div>
+            </div>
+        )}
+
         {messages.map((msg, i) => (
           <div key={i} style={{
             display: "flex",
@@ -713,16 +877,27 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
         }}>↑</button>
 
         {videoState === "idle" && (
-          <button onClick={requestVideo} style={{
-            background: "rgba(26,147,111,0.15)", border: "1px solid rgba(26,147,111,0.3)",
-            borderRadius: 10, width: 44, height: 44, color: "#1a936f", fontSize: 18,
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-            flexShrink: 0, transition: "all 0.2s"
-          }}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(26,147,111,0.25)"}
-            onMouseLeave={e => e.currentTarget.style.background = "rgba(26,147,111,0.15)"}
-            title="Start Video Call"
-          >📹</button>
+          timer > 570 ? (
+            <div style={{
+              padding: "0 12px", height: 44, color: "#888", fontSize: 11,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
+              borderRadius: 10, fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em"
+            }}>
+              VIDEO IN {timer - 570}s
+            </div>
+          ) : (
+            <button onClick={requestVideo} style={{
+              background: "rgba(26,147,111,0.15)", border: "1px solid rgba(26,147,111,0.3)",
+              borderRadius: 10, width: 44, height: 44, color: "#1a936f", fontSize: 18,
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0, transition: "all 0.2s"
+            }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(26,147,111,0.25)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(26,147,111,0.15)"}
+              title="Start Video Call"
+            >📹</button>
+          )
         )}
       </div>
 
