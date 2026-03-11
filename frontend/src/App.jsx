@@ -64,13 +64,13 @@ function LandingScreen({ onStart }) {
   }, []);
 
   function handleStart() {
-    if (!email.trim()) { setError("Enter your LPU email or registration number."); return; }
+    if (!email.trim() || !name.trim() || !gender) { setError("Fill out all the details required."); return; }
     if (!email.includes("@lpu") && !/^\d{8,12}$/.test(email.trim())) {
       setError("Use your @lpu.in email or LPU reg number.");
       return;
     }
     setError("");
-    onStart(email.trim());
+    onStart(email.trim(), name.trim(), gender);
   }
 
   return (
@@ -629,9 +629,9 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
 
   return (
     <div style={{
-      minHeight: "100vh", background: "#080808", display: "flex", flexDirection: "column",
+      height: "100dvh", background: "#080808", display: "flex", flexDirection: "column",
       fontFamily: "'Space Mono', monospace", maxWidth: 680, margin: "0 auto",
-      position: "relative"
+      position: "relative", overflow: "hidden"
     }}>
       <Noise />
       <style>{`
@@ -735,22 +735,24 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
              <video ref={remoteVideoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             <div style={{
               position: "absolute", bottom: 10, left: 12, fontSize: 10,
-              color: "#fff", letterSpacing: "0.08em", textShadow: "0 1px 2px rgba(0,0,0,0.8)"
+              color: "#fff", letterSpacing: "0.08em", textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+              zIndex: 2
             }}>{DisplayPartnerName}</div>
              <div style={{
               position: "absolute", top: 10, right: 12, width: 8, height: 8,
               borderRadius: "50%", background: "#ff4444",
               boxShadow: "0 0 8px rgba(255,68,68,0.6)",
-              animation: "blink 1.5s infinite"
+              animation: "blink 1.5s infinite",
+              zIndex: 2
             }} />
           </div>
           <div style={{
             width: 120, aspectRatio: "9/16", background: "linear-gradient(135deg,#1e1e1e,#0f0f0f)",
             borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
-            border: "1px solid rgba(255,255,255,0.06)", position: "relative", overflow: "hidden"
+            border: "1px solid rgba(255,255,255,0.06)", position: "relative", overflow: "hidden", flexShrink: 0
           }}>
              <video ref={localVideoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div style={{ position: "absolute", bottom: 8, left: 8, fontSize: 9, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.8)" }}>You</div>
+            <div style={{ position: "absolute", bottom: 8, left: 8, fontSize: 9, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.8)", zIndex: 2 }}>You</div>
           </div>
         </div>
       )}
@@ -991,17 +993,25 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
 export default function App() {
   const [screen, setScreen] = useState("landing"); // landing | matching | chat
   const [userEmail, setUserEmail] = useState("");
+  const [userName, setUserName] = useState("");
+  const [userGender, setUserGender] = useState("");
   const [partner, setPartner] = useState("");
+  const [partnerName, setPartnerName] = useState("");
+  const [partnerGender, setPartnerGender] = useState("");
   const [room, setRoom] = useState("");
   const [partnerId, setPartnerId] = useState("");
 
-  function handleStart(email) {
+  function handleStart(email, name, gender) {
     setUserEmail(email);
+    setUserName(name);
+    setUserGender(gender);
     setScreen("matching");
   }
 
-  function handleMatched(partnerName, roomName, peerId) {
-    setPartner(partnerName);
+  function handleMatched(pEmail, roomName, peerId, pName, pGender) {
+    setPartner(pEmail);
+    setPartnerName(pName);
+    setPartnerGender(pGender);
     setRoom(roomName);
     setPartnerId(peerId);
     setScreen("chat");
@@ -1012,6 +1022,8 @@ export default function App() {
     setPartner("");
     setRoom("");
     setPartnerId("");
+    setPartnerName("");
+    setPartnerGender("");
   }
 
   function handleEnd() {
@@ -1031,6 +1043,8 @@ export default function App() {
       {screen === "matching" && (
         <MatchingScreen
           userEmail={userEmail}
+          userName={userName}
+          userGender={userGender}
           onMatched={handleMatched}
           onCancel={() => setScreen("landing")}
         />
@@ -1038,7 +1052,11 @@ export default function App() {
       {screen === "chat" && (
         <ChatScreen
           userEmail={userEmail}
+          userName={userName}
+          userGender={userGender}
           partner={partner}
+          partnerName={partnerName}
+          partnerGender={partnerGender}
           room={room}
           partnerId={partnerId}
           onSkip={handleSkip}
