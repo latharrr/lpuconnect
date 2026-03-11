@@ -123,6 +123,52 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Direct Messaging
+  socket.on('join_direct', (data) => {
+    const { userEmail, friendEmail, userPeerId, userName, userGender } = data;
+    
+    // Create deterministic room name by sorting emails alphabetically
+    const sortedEmails = [userEmail, friendEmail].sort();
+    const roomName = `direct-${sortedEmails[0]}-${sortedEmails[1]}`;
+    
+    socket.join(roomName);
+
+    // Track active direct users to pass peerIds later
+    if (!activeRooms.has(roomName)) {
+        activeRooms.set(roomName, { users: {} });
+    }
+    const roomState = activeRooms.get(roomName);
+    if (!roomState.users) roomState.users = {};
+    
+    roomState.users[userEmail] = { peerId: userPeerId, name: userName, gender: userGender, socketId: socket.id };
+    
+    // Check if friend is already in room
+    const friendData = roomState.users[friendEmail];
+    
+    if (friendData) {
+        // Friend is online, cross-notify both
+        socket.emit('direct_matched', {
+            room: roomName,
+            partnerId: friendData.peerId,
+            partnerName: friendData.name,
+            partnerEmail: friendEmail,
+            partnerGender: friendData.gender
+        });
+
+        socket.to(friendData.socketId).emit('direct_matched', {
+            room: roomName,
+            partnerId: userPeerId,
+            partnerName: userName,
+            partnerEmail: userEmail,
+            partnerGender: userGender
+        });
+    } else {
+        // Just join and wait for friend to click
+        socket.emit('direct_waiting', { room: roomName });
+    }
+    console.log(`User ${userEmail} joined direct room ${roomName}`);
+  });
+
   socket.on('send_message', (data) => {
     const { room, text, from } = data;
     // Broadcast message to others in the room

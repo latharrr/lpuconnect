@@ -229,7 +229,7 @@ function LandingScreen({ onLogin }) {
 }
 
 // ─── SCREEN: DASHBOARD ────────────────────────────────────────────────────────
-function DashboardScreen({ user, friends, onStartMatch }) {
+function DashboardScreen({ user, friends, onStartMatch, onStartDirectMatch }) {
   const [bio, setBio] = useState(user.bio || "");
   const [savingBio, setSavingBio] = useState(false);
 
@@ -319,17 +319,30 @@ function DashboardScreen({ user, friends, onStartMatch }) {
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                    {friends.map((friend, idx) => (
                       <div key={idx} style={{
-                         display: "flex", alignItems: "center", gap: 12,
+                         display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
                          background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 12,
                          border: "1px solid rgba(255,255,255,0.04)"
                       }}>
-                         <Avatar name={friend.name} size={40} />
-                         <div>
-                            <div style={{ fontSize: 14, fontWeight: 700 }}>{friend.name} <span style={{fontWeight: 'normal', fontSize: 11, color: "#666"}}>({friend.gender})</span></div>
-                            <div style={{ fontSize: 12, color: "#888", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>
-                               {friend.bio || "No bio set."}
+                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <Avatar name={friend.name} size={40} />
+                            <div>
+                               <div style={{ fontSize: 14, fontWeight: 700 }}>{friend.name} <span style={{fontWeight: 'normal', fontSize: 11, color: "#666"}}>({friend.gender})</span></div>
+                               <div style={{ fontSize: 12, color: "#888", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>
+                                  {friend.bio || "No bio set."}
+                               </div>
                             </div>
                          </div>
+                         <button onClick={() => onStartDirectMatch(friend)} style={{
+                            background: "rgba(255,107,53,0.1)", border: "1px solid rgba(255,107,53,0.3)",
+                            color: "#ff6b35", padding: "8px 12px", borderRadius: 8, cursor: "pointer",
+                            fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 700, flexShrink: 0,
+                            transition: "all 0.2s"
+                         }}
+                            onMouseEnter={e => e.target.style.background = "rgba(255,107,53,0.2)"}
+                            onMouseLeave={e => e.target.style.background = "rgba(255,107,53,0.1)"}
+                         >
+                            Chat 💬
+                         </button>
                       </div>
                    ))}
                 </div>
@@ -442,20 +455,79 @@ function MatchingScreen({ userEmail, userName, userGender, onMatched, onCancel }
   );
 }
 
+// ─── SCREEN: DIRECT MATCHING ──────────────────────────────────────────────────
+function DirectMatchingScreen({ userEmail, userName, userGender, friendEmail, friendName, onMatched, onCancel }) {
+  const [dots, setDots] = useState(".");
+
+  useEffect(() => {
+    const d = setInterval(() => setDots(p => p.length >= 3 ? "." : p + "."), 500);
+
+    const safePeerId = socket.id.replace(/[^a-zA-Z0-9]/g, "");
+    
+    // Request to join deterministic direct room
+    socket.emit("join_direct", { 
+        userEmail, userPeerId: safePeerId, userName, userGender, friendEmail 
+    });
+    
+    socket.on("direct_matched", (data) => {
+        onMatched(data.partnerEmail, data.room, data.partnerId, data.partnerName, data.partnerGender, true);
+    });
+
+    return () => { 
+        clearInterval(d); 
+        socket.off("direct_matched");
+        socket.off("direct_waiting");
+    };
+  }, []);
+  
+  const handleCancel = () => {
+      socket.disconnect(); 
+      socket.connect();
+      onCancel();
+  }
+
+  return (
+    <div style={{
+      minHeight: "100vh", background: "#080808", display: "flex",
+      flexDirection: "column", alignItems: "center", justifyContent: "center",
+      fontFamily: "'Space Mono', monospace", position: "relative"
+    }}>
+      <Noise />
+      <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
+        
+        <div style={{ display: "flex", gap: 16, alignItems: "center", justifyContent: "center", marginBottom: 32 }}>
+           <Avatar name={userName} size={64} />
+           <div style={{ color: "#666", fontSize: 24 }}>→</div>
+           <Avatar name={friendName} size={64} />
+        </div>
+
+        <h2 style={{ fontSize: 20, color: "#f0ede8", margin: "0 0 12px" }}>Calling {friendName}{dots}</h2>
+        <p style={{ color: "#666", fontSize: 13, marginBottom: 32, letterSpacing: "0.05em" }}>
+          Waiting for them to connect...
+        </p>
+        <button onClick={handleCancel} style={{
+          background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#555",
+          padding: "10px 24px", borderRadius: 8, cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: 12
+        }}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
 // ─── SCREEN: CHAT ─────────────────────────────────────────────────────────────
-function ChatScreen({ userEmail, userName, userGender, partner, partnerName, partnerGender, room, partnerId, onSkip, onEnd }) {
+function ChatScreen({ userEmail, userName, userGender, partner, partnerName, partnerGender, room, partnerId, isDirect, onSkip, onEnd }) {
   const [messages, setMessages] = useState([
-    { from: "system", text: `Connected with an anonymous student. Say hello!`, time: new Date() }
+    { from: "system", text: isDirect ? `Direct connected with ${partnerName}.` : `Connected with an anonymous student. Say hello!`, time: new Date() }
   ]);
   const [input, setInput] = useState("");
   const [videoState, setVideoState] = useState("idle"); // idle | requesting | active | rejected
-  const [timer, setTimer] = useState(600); // 10 min
+  const [timer, setTimer] = useState(isDirect ? 3600 : 600); // 1hr for direct, 10 min random
   const [reported, setReported] = useState(false);
   const [showReport, setShowReport] = useState(false);
   const [incomingVideo, setIncomingVideo] = useState(false);
   
-  const [friendState, setFriendState] = useState("none"); // none | sent | received | friends
-  const [enjoyState, setEnjoyState] = useState("none"); // none | sent | received | mutual
+  const [friendState, setFriendState] = useState(isDirect ? "friends" : "none"); // none | sent | received | friends
+  const [enjoyState, setEnjoyState] = useState(isDirect ? "mutual" : "none"); // none | sent | received | mutual
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
   
@@ -1250,7 +1322,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [screen, setScreen] = useState("landing"); // landing | dashboard | matching | chat
+  const [screen, setScreen] = useState("landing"); // landing | dashboard | matching | direct | chat
   const [currentUser, setCurrentUser] = useState(null);
   const [friends, setFriends] = useState([]);
   const [partner, setPartner] = useState("");
@@ -1258,6 +1330,7 @@ export default function App() {
   const [partnerGender, setPartnerGender] = useState("");
   const [room, setRoom] = useState("");
   const [partnerId, setPartnerId] = useState("");
+  const [isDirectChat, setIsDirectChat] = useState(false);
 
   function handleLogin(user, userFriends) {
     setCurrentUser(user);
@@ -1266,15 +1339,24 @@ export default function App() {
   }
 
   function handleStartMatch() {
+    setIsDirectChat(false);
     setScreen("matching");
   }
+  
+  function handleStartDirectMatch(friend) {
+    setPartner(friend.email);
+    setPartnerName(friend.name);
+    setIsDirectChat(true);
+    setScreen("direct");
+  }
 
-  function handleMatched(pEmail, roomName, peerId, pName, pGender) {
+  function handleMatched(pEmail, roomName, peerId, pName, pGender, isDirect = false) {
     setPartner(pEmail);
     setPartnerName(pName);
     setPartnerGender(pGender);
     setRoom(roomName);
     setPartnerId(peerId);
+    setIsDirectChat(isDirect);
     setScreen("chat");
   }
 
@@ -1306,6 +1388,7 @@ export default function App() {
           user={currentUser}
           friends={friends}
           onStartMatch={handleStartMatch}
+          onStartDirectMatch={handleStartDirectMatch}
         />
       )}
       {screen === "matching" && (
@@ -1313,6 +1396,17 @@ export default function App() {
           userEmail={currentUser.email}
           userName={currentUser.name}
           userGender={currentUser.gender}
+          onMatched={handleMatched}
+          onCancel={() => setScreen("dashboard")}
+        />
+      )}
+      {screen === "direct" && (
+        <DirectMatchingScreen
+          userEmail={currentUser.email}
+          userName={currentUser.name}
+          userGender={currentUser.gender}
+          friendEmail={partner}
+          friendName={partnerName}
           onMatched={handleMatched}
           onCancel={() => setScreen("dashboard")}
         />
@@ -1327,6 +1421,7 @@ export default function App() {
           partnerGender={partnerGender}
           room={room}
           partnerId={partnerId}
+          isDirect={isDirectChat}
           onSkip={handleSkip}
           onEnd={handleEnd}
         />
