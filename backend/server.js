@@ -32,7 +32,7 @@ io.on('connection', (socket) => {
     const { email, peerId } = data;
     
     // Check if someone is waiting in the queue and it's NOT the same user
-    if (waitingUser && waitingUser.socket.id !== socket.id) {
+    if (waitingUser && waitingUser.peerId !== peerId) {
         // Connect both users
         const roomName = `room-${socket.id}-${waitingUser.socket.id}`;
         
@@ -64,8 +64,8 @@ io.on('connection', (socket) => {
         // Reset queue
         waitingUser = null;
         console.log(`Matched users in room ${roomName}`);
-    } else {
-        // Put user in queue
+    } else if (!waitingUser || waitingUser.peerId === peerId) {
+        // Put user in queue, avoiding immediate self-match
         waitingUser = {
             socket,
             email,
