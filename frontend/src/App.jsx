@@ -339,6 +339,8 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
   const [remoteStream, setRemoteStream] = useState(null);
   const [currentCall, setCurrentCall] = useState(null);
 
+  const DisplayPartnerName = friendState === "friends" ? partnerName : "Student";
+
   useEffect(() => {
     if (videoState === "active" && localVideoRef.current && localStream) {
       localVideoRef.current.srcObject = localStream;
@@ -350,8 +352,6 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
       remoteVideoRef.current.srcObject = remoteStream;
     }
   }, [videoState, remoteStream]);
-  
-  const DisplayPartnerName = friendState === "friends" ? partnerName : "Student";
 
 
   // Auto-scroll
@@ -660,7 +660,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
           </div>
         </div>
 
-        {friendState === "none" && (
+        {friendState === "none" && timer <= 480 && (
             <button onClick={sendFriendRequest} style={{
               background: "rgba(255,107,53,0.1)", border: "1px solid rgba(255,107,53,0.3)", color: "#ff6b35",
               padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 700,
@@ -671,6 +671,15 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
             >
               + ADD FRIEND
             </button>
+        )}
+        {friendState === "none" && timer > 480 && (
+            <div style={{
+              background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", color: "#666",
+              padding: "6px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+              fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em"
+            }}>
+              FRIEND IN {timer - 480}s
+            </div>
         )}
         {friendState === "sent" && (
             <div style={{
