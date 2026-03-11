@@ -289,8 +289,8 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
   const [incomingVideo, setIncomingVideo] = useState(false);
   
   const messagesEndRef = useRef(null);
+  const peerRef = useRef(null);
   
-  const [peer, setPeer] = useState(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const [localStream, setLocalStream] = useState(null);
@@ -372,7 +372,7 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
           path: '/peerjs',
           secure: url.protocol === 'https:'
       });
-      setPeer(newPeer);
+      peerRef.current = newPeer;
 
       newPeer.on("call", (call) => {
           if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -439,6 +439,12 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
   }
 
   function startPeerCall() {
+     if (!peerRef.current) {
+         alert("Call server is still connecting. Please try again in a few seconds.");
+         setVideoState("idle");
+         return;
+     }
+
      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
          alert("Your browser does not support video calls.");
          setVideoState("idle");
@@ -448,7 +454,7 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
         setLocalStream(stream);
         setVideoState("active");
         
-        const call = peer.call(partnerId, stream);
+        const call = peerRef.current.call(partnerId, stream);
         setCurrentCall(call);
 
         call.on("stream", (incomingStream) => {
