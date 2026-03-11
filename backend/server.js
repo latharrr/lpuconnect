@@ -2,11 +2,12 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-
 import { ExpressPeerServer } from 'peer';
+import { dbrun, dbget, dball } from './db.js';
 
 const app = express();
 app.use(cors());
+app.use(express.json());
 const server = createServer(app);
 
 // Initialize PeerJS server
@@ -24,6 +25,51 @@ const io = new Server(server, {
 });
 
 let waitingUser = null;
+const activeRooms = new Map();
+
+// --- REST API ROUTES ---
+app.post('/api/login', async (req, res) => {
+    const { email, name, gender } = req.body;
+    if (!email || !name || !gender) return res.status(400).json({ error: "Missing fields" });
+
+    try {
+        // Upsert user
+        await dbrun(
+            `INSERT INTO users (id, email, name, gender) VALUES (?, ?, ?, ?)
+             ON CONFLICT(email) DO UPDATE SET name=excluded.name, gender=excluded.gender`,
+            [email, email, name, gender]
+        );
+
+        const user = await dbget(`SELECT * FROM users WHERE email = ?`, [email]);
+
+        // Fetch mutual friends list (relational join)
+        const friends = await dball(`
+            SELECT u.email, u.name, u.gender, u.bio
+            FROM friends f
+            JOIN users u ON f.user_id_2 = u.email
+            WHERE f.user_id_1 = ?
+        `, [email]);
+
+        res.json({ user, friends });
+    } catch (err) {
+        console.error("Login Error:", err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+app.post('/api/profile/bio', async (req, res) => {
+    const { email, bio } = req.body;
+    if (!email) return res.status(400).json({ error: "Missing email" });
+
+    try {
+        await dbrun(`UPDATE users SET bio = ? WHERE email = ?`, [bio || "", email]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Bio Update Error:", err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+// -----------------------
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
@@ -58,7 +104,10 @@ io.on('connection', (socket) => {
             partnerGender: waitingUser.gender
         });
         
-        // Reset queue
+        // Track room participants for database friend insertion
+        activeRooms.set(roomName, { user1: email, user2: waitingUser.email });
+
+        // Reset waiting user since they've been matched
         waitingUser = null;
         console.log(`Matched users in room ${roomName}`);
     } else if (!waitingUser || waitingUser.peerId === peerId) {
@@ -105,8 +154,22 @@ io.on('connection', (socket) => {
       socket.to(data.room).emit('enjoy_request');
   });
 
-  socket.on('enjoy_accept', (data) => {
+  socket.on('enjoy_accept', async (data) => {
       socket.to(data.room).emit('enjoy_accept');
+      
+      // Save to database as mutual friends
+      const roomData = activeRooms.get(data.room);
+      if (roomData) {
+          const { user1, user2 } = roomData;
+          try {
+              // Insert both directions
+              await dbrun(`INSERT OR IGNORE INTO friends (user_id_1, user_id_2) VALUES (?, ?)`, [user1, user2]);
+              await dbrun(`INSERT OR IGNORE INTO friends (user_id_1, user_id_2) VALUES (?, ?)`, [user2, user1]);
+              console.log(`Saved mutual friendship between ${user1} and ${user2}`);
+          } catch (err) {
+              console.error("Error saving friendship:", err);
+          }
+      }
   });
 
   // Timer extension signaling

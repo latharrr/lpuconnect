@@ -41,7 +41,7 @@ function Avatar({ name, size = 48 }) {
 }
 
 // ─── SCREEN: LANDING ──────────────────────────────────────────────────────────
-function LandingScreen({ onStart }) {
+function LandingScreen({ onLogin }) {
   const [tagIdx, setTagIdx] = useState(0);
   const [visible, setVisible] = useState(true);
   const [email, setEmail] = useState("");
@@ -49,6 +49,7 @@ function LandingScreen({ onStart }) {
   const [gender, setGender] = useState("");
   const [error, setError] = useState("");
   const [pulse, setPulse] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const iv = setInterval(() => {
@@ -63,14 +64,27 @@ function LandingScreen({ onStart }) {
     return () => clearInterval(iv);
   }, []);
 
-  function handleStart() {
+  async function handleStart() {
     if (!email.trim() || !name.trim() || !gender) { setError("Fill out all the details required."); return; }
-    if (!email.includes("@lpu") && !/^\d{8,12}$/.test(email.trim())) {
+    if (!email.includes("@lpu.in") && !/^\d{8,12}$/.test(email.trim())) {
       setError("Use your @lpu.in email or LPU reg number.");
       return;
     }
     setError("");
-    onStart(email.trim(), name.trim(), gender);
+    setLoading(true);
+    try {
+        const res = await fetch(`${SOCKET_URL}/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email.trim(), name: name.trim(), gender })
+        });
+        if (!res.ok) throw new Error("Failed to login");
+        const data = await res.json();
+        onLogin(data.user, data.friends);
+    } catch (err) {
+        setError("Error connecting to server. Please try again.");
+        setLoading(false);
+    }
   }
 
   return (
@@ -192,23 +206,137 @@ function LandingScreen({ onStart }) {
           {error && <p style={{ color: "#ff6b35", fontSize: 11, marginTop: 8, textAlign: "left" }}>{error}</p>}
         </div>
 
-        <button onClick={handleStart} style={{
-          width: "100%", padding: "18px", background: "#ff6b35",
+        <button onClick={handleStart} disabled={loading} style={{
+          width: "100%", padding: "18px", background: loading ? "#555" : "#ff6b35",
           border: "none", borderRadius: 12, color: "#0a0a0a",
           fontSize: 15, fontWeight: 700, fontFamily: "'Space Mono', monospace",
-          cursor: "pointer", letterSpacing: "0.05em",
+          cursor: loading ? "default" : "pointer", letterSpacing: "0.05em",
           transition: "transform 0.1s, box-shadow 0.2s",
           boxShadow: "0 0 0 rgba(255,107,53,0)"
         }}
-          onMouseEnter={e => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 8px 30px rgba(255,107,53,0.4)"; }}
-          onMouseLeave={e => { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 0 0 rgba(255,107,53,0)"; }}
+          onMouseEnter={e => { if (!loading) { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 8px 30px rgba(255,107,53,0.4)"; } }}
+          onMouseLeave={e => { if (!loading) { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 0 0 rgba(255,107,53,0)"; } }}
         >
-          START CHAT →
+          {loading ? "AUTHENTICATING..." : "LOGIN / ENTER →"}
         </button>
 
         <p style={{ color: "#333", fontSize: 11, marginTop: 20, letterSpacing: "0.05em" }}>
           VERIFIED CAMPUS STUDENTS ONLY · ENCRYPTED · SAFE
         </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── SCREEN: DASHBOARD ────────────────────────────────────────────────────────
+function DashboardScreen({ user, friends, onStartMatch }) {
+  const [bio, setBio] = useState(user.bio || "");
+  const [savingBio, setSavingBio] = useState(false);
+
+  async function saveBio() {
+      setSavingBio(true);
+      await fetch(`${SOCKET_URL}/api/profile/bio`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: user.email, bio })
+      });
+      setSavingBio(false);
+  }
+
+  return (
+    <div style={{
+      minHeight: "100vh", background: "#080808", color: "#f0ede8",
+      fontFamily: "'Space Mono', monospace", padding: "40px 24px", position: "relative",
+    }}>
+      <Noise />
+      <div style={{ maxWidth: 800, margin: "0 auto", position: "relative", zIndex: 1 }}>
+        
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 40 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
+            LPU<span style={{ color: "#ff6b35" }}>connect</span> <span style={{color: "#555"}}>// Dashboard</span>
+          </h1>
+        </div>
+
+        <div style={{ display: "flex", gap: 32, flexWrap: "wrap", alignItems: "flex-start" }}>
+          
+          {/* Left Column: Profile */}
+          <div style={{
+            flex: "1 1 300px", background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: 24
+          }}>
+             <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
+                <Avatar name={user.name} size={64} />
+                <div>
+                   <h2 style={{ margin: "0 0 4px 0", fontSize: 20 }}>{user.name}</h2>
+                   <div style={{ color: "#888", fontSize: 13 }}>{user.gender} · {user.email}</div>
+                </div>
+             </div>
+
+             <label style={{ display: "block", fontSize: 11, color: "#666", marginBottom: 8, letterSpacing: "0.05em" }}>SHORT BIO</label>
+             <textarea 
+                value={bio}
+                onChange={e => setBio(e.target.value)}
+                onBlur={saveBio}
+                placeholder="A bit about yourself..."
+                style={{
+                  width: "100%", height: 80, padding: 12, boxSizing: "border-box", resize: "none",
+                  background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 12, color: "#f0ede8", fontSize: 13, fontFamily: "'Space Mono', monospace",
+                  outline: "none"
+                }}
+             />
+             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: "#555" }}>
+                <span>Changes save automatically on click-away</span>
+                {savingBio && <span style={{color: "#1a936f"}}>Saving...</span>}
+             </div>
+
+             <button onClick={onStartMatch} style={{
+                width: "100%", padding: "16px", background: "#ff6b35", marginTop: 32,
+                border: "none", borderRadius: 12, color: "#0a0a0a",
+                fontSize: 14, fontWeight: 700, fontFamily: "'Space Mono', monospace",
+                cursor: "pointer", letterSpacing: "0.05em"
+             }}>
+                START RANDOM MATCH →
+             </button>
+          </div>
+
+          {/* Right Column: Friends List */}
+          <div style={{
+            flex: "1 1 300px", background: "rgba(255,255,255,0.02)",
+            border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: 24
+          }}>
+             <h3 style={{ margin: "0 0 20px 0", fontSize: 16, borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: 16 }}>
+               Your Friends ({friends.length})
+             </h3>
+
+             {friends.length === 0 ? (
+                <div style={{ textAlign: "center", padding: "40px 0", color: "#666", fontSize: 13 }}>
+                   <div style={{ fontSize: 32, marginBottom: 12 }}>👻</div>
+                   No friends unlocked yet.<br/>Start matching to meet people!
+                </div>
+             ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                   {friends.map((friend, idx) => (
+                      <div key={idx} style={{
+                         display: "flex", alignItems: "center", gap: 12,
+                         background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 12,
+                         border: "1px solid rgba(255,255,255,0.04)"
+                      }}>
+                         <Avatar name={friend.name} size={40} />
+                         <div>
+                            <div style={{ fontSize: 14, fontWeight: 700 }}>{friend.name} <span style={{fontWeight: 'normal', fontSize: 11, color: "#666"}}>({friend.gender})</span></div>
+                            <div style={{ fontSize: 12, color: "#888", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 200 }}>
+                               {friend.bio || "No bio set."}
+                            </div>
+                         </div>
+                      </div>
+                   ))}
+                </div>
+             )}
+          </div>
+
+        </div>
       </div>
     </div>
   );
@@ -1122,20 +1250,22 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
 
 // ─── APP ROOT ─────────────────────────────────────────────────────────────────
 export default function App() {
-  const [screen, setScreen] = useState("landing"); // landing | matching | chat
-  const [userEmail, setUserEmail] = useState("");
-  const [userName, setUserName] = useState("");
-  const [userGender, setUserGender] = useState("");
+  const [screen, setScreen] = useState("landing"); // landing | dashboard | matching | chat
+  const [currentUser, setCurrentUser] = useState(null);
+  const [friends, setFriends] = useState([]);
   const [partner, setPartner] = useState("");
   const [partnerName, setPartnerName] = useState("");
   const [partnerGender, setPartnerGender] = useState("");
   const [room, setRoom] = useState("");
   const [partnerId, setPartnerId] = useState("");
 
-  function handleStart(email, name, gender) {
-    setUserEmail(email);
-    setUserName(name);
-    setUserGender(gender);
+  function handleLogin(user, userFriends) {
+    setCurrentUser(user);
+    setFriends(userFriends);
+    setScreen("dashboard");
+  }
+
+  function handleStartMatch() {
     setScreen("matching");
   }
 
@@ -1158,7 +1288,7 @@ export default function App() {
   }
 
   function handleEnd() {
-    setScreen("landing");
+    setScreen("dashboard");
   }
 
   useEffect(() => {
@@ -1170,21 +1300,28 @@ export default function App() {
 
   return (
     <div style={{ fontFamily: "'Space Mono', monospace" }}>
-      {screen === "landing" && <LandingScreen onStart={handleStart} />}
+      {screen === "landing" && <LandingScreen onLogin={handleLogin} />}
+      {screen === "dashboard" && (
+        <DashboardScreen
+          user={currentUser}
+          friends={friends}
+          onStartMatch={handleStartMatch}
+        />
+      )}
       {screen === "matching" && (
         <MatchingScreen
-          userEmail={userEmail}
-          userName={userName}
-          userGender={userGender}
+          userEmail={currentUser.email}
+          userName={currentUser.name}
+          userGender={currentUser.gender}
           onMatched={handleMatched}
-          onCancel={() => setScreen("landing")}
+          onCancel={() => setScreen("dashboard")}
         />
       )}
       {screen === "chat" && (
         <ChatScreen
-          userEmail={userEmail}
-          userName={userName}
-          userGender={userGender}
+          userEmail={currentUser.email}
+          userName={currentUser.name}
+          userGender={currentUser.gender}
           partner={partner}
           partnerName={partnerName}
           partnerGender={partnerGender}
