@@ -352,7 +352,13 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
 
   // Peer JS logic initialization
   useEffect(() => {
-      const newPeer = new Peer(socket.id); // Re-use socket id as peer id
+      const url = new URL(SOCKET_URL);
+      const newPeer = new Peer(socket.id, {
+          host: url.hostname,
+          port: url.port || (url.protocol === 'https:' ? 443 : 80),
+          path: '/peerjs',
+          secure: url.protocol === 'https:'
+      });
       setPeer(newPeer);
 
       newPeer.on("call", (call) => {

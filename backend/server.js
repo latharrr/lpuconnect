@@ -3,9 +3,18 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 
+import { ExpressPeerServer } from 'peer';
+
 const app = express();
 app.use(cors());
 const server = createServer(app);
+
+// Initialize PeerJS server
+const peerServer = ExpressPeerServer(server, {
+  debug: true,
+  path: '/',
+});
+app.use('/peerjs', peerServer);
 
 const io = new Server(server, {
   cors: {
