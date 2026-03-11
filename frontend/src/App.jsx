@@ -727,7 +727,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
             <div style={{
               position: "absolute", bottom: 10, left: 12, fontSize: 10,
               color: "#fff", letterSpacing: "0.08em", textShadow: "0 1px 2px rgba(0,0,0,0.8)"
-            }}>{anonymousPartnerName}</div>
+            }}>{DisplayPartnerName}</div>
              <div style={{
               position: "absolute", top: 10, right: 12, width: 8, height: 8,
               borderRadius: "50%", background: "#ff4444",
@@ -794,7 +794,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
               animation: "fadeUp 0.3s ease"
             }}>
               <div style={{ color: "#f0ede8", fontSize: 13, fontWeight: 700 }}>
-                {anonymousPartnerName} wants to be friends and reveal identities.
+                {DisplayPartnerName} wants to be friends and reveal identities.
               </div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button onClick={acceptFriendRequest} style={{
@@ -818,7 +818,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
             alignItems: "flex-end", gap: 8,
             animation: "fadeUp 0.25s ease"
           }}>
-            {msg.from !== "me" && msg.from !== "system" && <Avatar name={anonymousPartnerName} size={28} />}
+            {msg.from !== "me" && msg.from !== "system" && <Avatar name={DisplayPartnerName} size={28} />}
             <div style={{
               maxWidth: "72%",
               background: msg.from === "system"
@@ -912,7 +912,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
             borderRadius: 20, padding: 32, textAlign: "center", maxWidth: 320,
             animation: "fadeUp 0.3s ease"
           }}>
-            <Avatar name={anonymousPartnerName} size={64} />
+            <Avatar name={DisplayPartnerName} size={64} />
             <p style={{ color: "#f0ede8", marginTop: 16, marginBottom: 4, fontSize: 15, fontWeight: 700 }}>
               Incoming Video Call
             </p>
