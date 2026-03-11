@@ -330,6 +330,9 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
   
+  const [extendState, setExtendState] = useState("none"); // none | sent | received
+  const [showExtendBanner, setShowExtendBanner] = useState(false);
+
   const messagesEndRef = useRef(null);
   const peerRef = useRef(null);
   
@@ -360,7 +363,15 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
   // Timer countdown
   useEffect(() => {
     const iv = setInterval(() => setTimer(t => {
-      if (t <= 1) { clearInterval(iv); onEnd(); return 0; }
+      // Show prompt at 2m (480s), 4m (360s), and 8m (120s) into the 10m chat
+      if (t === 481 || t === 361 || t === 121) {
+          setShowExtendBanner(true);
+      }
+      if (t <= 1) { 
+          // Do not hard skip anymore. Just sit at 0.
+          clearInterval(iv); 
+          return 0; 
+      }
       return t - 1;
     }), 1000);
     return () => clearInterval(iv);
@@ -409,6 +420,23 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         setMessages(m => [...m, { from: "system", text: `Friend request declined.`, time: new Date() }]);
     });
 
+    socket.on("extend_request", () => {
+        setExtendState("received");
+        setShowExtendBanner(true);
+    });
+
+    socket.on("extend_accept", () => {
+        setExtendState("none");
+        setShowExtendBanner(false);
+        setTimer(600); // Reset to 10 mins
+        setMessages(m => [...m, { from: "system", text: `Time extended! You have 10 more minutes.`, time: new Date() }]);
+    });
+
+    socket.on("extend_reject", () => {
+        setExtendState("none");
+        setMessages(m => [...m, { from: "system", text: `Partner declined to extend the time.`, time: new Date() }]);
+    });
+
     return () => {
         socket.off("receive_message");
         socket.off("partner_skipped");
@@ -419,6 +447,9 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         socket.off("friend_request");
         socket.off("friend_accept");
         socket.off("friend_reject");
+        socket.off("extend_request");
+        socket.off("extend_accept");
+        socket.off("extend_reject");
     };
   }, []);
 
@@ -601,6 +632,26 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
       setFriendState("none");
       socket.emit("friend_reject", { room });
       setMessages(m => [...m, { from: "system", text: "Friend request declined.", time: new Date() }]);
+  }
+
+  function requestExtendTimer() {
+      setExtendState("sent");
+      socket.emit("extend_request", { room });
+      setMessages(m => [...m, { from: "system", text: "Requested to extend the chat.", time: new Date() }]);
+  }
+
+  function acceptExtendTimer() {
+      setExtendState("none");
+      setShowExtendBanner(false);
+      socket.emit("extend_accept", { room });
+      setTimer(600);
+      setMessages(m => [...m, { from: "system", text: `Time extended! You have 10 more minutes.`, time: new Date() }]);
+  }
+
+  function rejectExtendTimer() {
+      setExtendState("none");
+      setShowExtendBanner(false);
+      socket.emit("extend_reject", { room });
   }
 
   function toggleMute() {
@@ -832,6 +883,54 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
             </div>
           </div>
         ))}
+
+        {showExtendBanner && (
+            <div style={{
+              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 12, padding: "12px 16px", marginTop: 8,
+              display: "flex", flexDirection: "column", gap: 10,
+              animation: "fadeUp 0.3s ease"
+            }}>
+              <div style={{ color: "#d8d4cf", fontSize: 12 }}>
+                Conversation ending soon — want to keep going?
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {extendState === "none" && (
+                    <button onClick={requestExtendTimer} style={{
+                      flex: 1, padding: "8px", background: "rgba(255,107,53,0.1)", color: "#ff6b35",
+                      fontWeight: 700, borderRadius: 8, border: "1px solid rgba(255,107,53,0.3)", cursor: "pointer",
+                      fontFamily: "'Space Mono', monospace", fontSize: 11
+                    }}>EXTEND TIMER</button>
+                )}
+                {extendState === "sent" && (
+                    <div style={{
+                      flex: 1, padding: "8px", background: "rgba(255,255,255,0.02)", color: "#888",
+                      fontWeight: 700, borderRadius: 8, border: "1px solid rgba(255,255,255,0.05)",
+                      fontFamily: "'Space Mono', monospace", fontSize: 11, textAlign: "center"
+                    }}>WAITING FOR PARTNER...</div>
+                )}
+                {extendState === "received" && (
+                    <>
+                        <button onClick={acceptExtendTimer} style={{
+                          flex: 1, padding: "8px", background: "#ff6b35", color: "#0a0a0a",
+                          fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer",
+                          fontFamily: "'Space Mono', monospace", fontSize: 11
+                        }}>ACCEPT EXTENSION</button>
+                        <button onClick={rejectExtendTimer} style={{
+                          flex: 1, padding: "8px", background: "rgba(255,255,255,0.05)", color: "#888",
+                          fontWeight: 700, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer",
+                          fontFamily: "'Space Mono', monospace", fontSize: 11
+                        }}>DECLINE</button>
+                    </>
+                )}
+                <button onClick={() => setShowExtendBanner(false)} style={{
+                  padding: "8px 12px", background: "transparent", color: "#666",
+                  fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer",
+                  fontFamily: "'Space Mono', monospace", fontSize: 11
+                }}>DISMISS</button>
+              </div>
+            </div>
+        )}
 
         {friendState === "received" && (
             <div style={{

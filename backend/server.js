@@ -99,6 +99,19 @@ io.on('connection', (socket) => {
   socket.on('friend_reject', (data) => {
     socket.to(data.room).emit('friend_reject');
   });
+
+  // Timer extension signaling
+  socket.on('extend_request', (data) => {
+      socket.to(data.room).emit('extend_request');
+  });
+
+  socket.on('extend_accept', (data) => {
+      socket.to(data.room).emit('extend_accept');
+  });
+
+  socket.on('extend_reject', (data) => {
+      socket.to(data.room).emit('extend_reject');
+  });
   
   // WebRTC signaling
   socket.on('video_request', (data) => {
