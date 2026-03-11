@@ -797,31 +797,6 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         display: "flex", flexDirection: "column", gap: 12,
         minHeight: 0
       }}>
-        {friendState === "received" && (
-            <div style={{
-              background: "rgba(255,107,53,0.1)", border: "1px solid rgba(255,107,53,0.3)",
-              borderRadius: 12, padding: "16px", marginBottom: 16,
-              display: "flex", flexDirection: "column", gap: 12,
-              animation: "fadeUp 0.3s ease"
-            }}>
-              <div style={{ color: "#f0ede8", fontSize: 13, fontWeight: 700 }}>
-                {DisplayPartnerName} wants to be friends and reveal identities.
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={acceptFriendRequest} style={{
-                  flex: 1, padding: "8px", background: "#ff6b35", color: "#0a0a0a",
-                  fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer",
-                  fontFamily: "'Space Mono', monospace", fontSize: 11
-                }}>ACCEPT</button>
-                <button onClick={rejectFriendRequest} style={{
-                  flex: 1, padding: "8px", background: "rgba(255,255,255,0.05)", color: "#888",
-                  fontWeight: 700, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer",
-                  fontFamily: "'Space Mono', monospace", fontSize: 11
-                }}>DECLINE</button>
-              </div>
-            </div>
-        )}
-
         {messages.map((msg, i) => (
           <div key={i} style={{
             display: "flex",
@@ -857,6 +832,31 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
             </div>
           </div>
         ))}
+
+        {friendState === "received" && (
+            <div style={{
+              background: "rgba(255,107,53,0.1)", border: "1px solid rgba(255,107,53,0.3)",
+              borderRadius: 12, padding: "16px", marginTop: 8,
+              display: "flex", flexDirection: "column", gap: 12,
+              animation: "fadeUp 0.3s ease"
+            }}>
+              <div style={{ color: "#f0ede8", fontSize: 13, fontWeight: 700 }}>
+                {DisplayPartnerName} wants to be friends and reveal identities.
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={acceptFriendRequest} style={{
+                  flex: 1, padding: "8px", background: "#ff6b35", color: "#0a0a0a",
+                  fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer",
+                  fontFamily: "'Space Mono', monospace", fontSize: 11
+                }}>ACCEPT</button>
+                <button onClick={rejectFriendRequest} style={{
+                  flex: 1, padding: "8px", background: "rgba(255,255,255,0.05)", color: "#888",
+                  fontWeight: 700, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer",
+                  fontFamily: "'Space Mono', monospace", fontSize: 11
+                }}>DECLINE</button>
+              </div>
+            </div>
+        )}
 
         <div ref={messagesEndRef} />
       </div>
