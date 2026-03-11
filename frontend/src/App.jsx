@@ -185,8 +185,9 @@ function MatchingScreen({ userEmail, onMatched, onCancel }) {
   useEffect(() => {
     const d = setInterval(() => setDots(p => p.length >= 3 ? "." : p + "."), 500);
 
-    // Communicate with socket
-    socket.emit("start_chat", { email: userEmail });
+    // Send the sanitized peerId we will be using
+    const safePeerId = socket.id.replace(/[^a-zA-Z0-9]/g, "");
+    socket.emit("start_chat", { email: userEmail, peerId: safePeerId });
     
     socket.on("matched", (data) => {
         onMatched(data.partnerEmail, data.room, data.partnerId);
@@ -366,7 +367,9 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
   // Peer JS logic initialization
   useEffect(() => {
       const url = new URL(SOCKET_URL);
-      const newPeer = new Peer(socket.id, {
+      const safePeerId = socket.id.replace(/[^a-zA-Z0-9]/g, "");
+      
+      const newPeer = new Peer(safePeerId, {
           host: url.hostname,
           port: url.port || (url.protocol === 'https:' ? 443 : 80),
           path: '/peerjs',

@@ -29,7 +29,7 @@ io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
 
   socket.on('start_chat', (data) => {
-    const { email } = data;
+    const { email, peerId } = data;
     
     // Check if someone is waiting in the queue and it's NOT the same user
     if (waitingUser && waitingUser.socket.id !== socket.id) {
@@ -43,21 +43,21 @@ io.on('connection', (socket) => {
         // Notify both users that they are connected
         io.to(roomName).emit('matched', {
             room: roomName,
-            partnerId: socket.id,
+            partnerId: peerId,
             partnerEmail: waitingUser.email
         });
         
         // Send to waiting user specifically that they matched with the new user
         waitingUser.socket.emit('matched', {
             room: roomName,
-            partnerId: socket.id,
+            partnerId: peerId,
             partnerEmail: email
         });
 
         // Send to new user specifically that they matched with the waiting user
         socket.emit('matched', {
             room: roomName,
-            partnerId: waitingUser.socket.id,
+            partnerId: waitingUser.peerId,
             partnerEmail: waitingUser.email
         });
         
@@ -68,9 +68,10 @@ io.on('connection', (socket) => {
         // Put user in queue
         waitingUser = {
             socket,
-            email
+            email,
+            peerId
         };
-        console.log(`User ${email} waiting for match`);
+        console.log(`User ${email} waiting for match with peerId ${peerId}`);
     }
   });
 
