@@ -327,6 +327,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
   const [incomingVideo, setIncomingVideo] = useState(false);
   
   const [friendState, setFriendState] = useState("none"); // none | sent | received | friends
+  const [enjoyState, setEnjoyState] = useState("none"); // none | sent | received | mutual
   const [isMuted, setIsMuted] = useState(false);
   const [isCameraOff, setIsCameraOff] = useState(false);
   
@@ -420,6 +421,18 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         setMessages(m => [...m, { from: "system", text: `Friend request declined.`, time: new Date() }]);
     });
 
+    socket.on("enjoy_request", () => {
+        setEnjoyState(prev => prev === "sent" ? "mutual" : "received");
+        if (enjoyState === "sent") {
+            setMessages(m => [...m, { from: "system", text: `You both enjoyed this chat! Adding friends is now unlocked.`, time: new Date() }]);
+        }
+    });
+
+    socket.on("enjoy_accept", () => {
+        setEnjoyState("mutual");
+        setMessages(m => [...m, { from: "system", text: `You both enjoyed this chat! Adding friends is now unlocked.`, time: new Date() }]);
+    });
+
     socket.on("extend_request", () => {
         setExtendState("received");
         setShowExtendBanner(true);
@@ -447,11 +460,13 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         socket.off("friend_request");
         socket.off("friend_accept");
         socket.off("friend_reject");
+        socket.off("enjoy_request");
+        socket.off("enjoy_accept");
         socket.off("extend_request");
         socket.off("extend_accept");
         socket.off("extend_reject");
     };
-  }, []);
+  }, [enjoyState]);
 
   // Peer JS logic initialization
   useEffect(() => {
@@ -634,6 +649,17 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
       setMessages(m => [...m, { from: "system", text: "Friend request declined.", time: new Date() }]);
   }
 
+  function handleEnjoy() {
+      if (enjoyState === "none") {
+          setEnjoyState("sent");
+          socket.emit("enjoy_request", { room });
+      } else if (enjoyState === "received") {
+          setEnjoyState("mutual");
+          socket.emit("enjoy_accept", { room });
+          setMessages(m => [...m, { from: "system", text: `You both enjoyed this chat! Adding friends is now unlocked.`, time: new Date() }]);
+      }
+  }
+
   function requestExtendTimer() {
       setExtendState("sent");
       socket.emit("extend_request", { room });
@@ -711,7 +737,22 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
           </div>
         </div>
 
-        {friendState === "none" && timer <= 480 && (
+        {enjoyState !== "mutual" && friendState === "none" && (
+            <button onClick={handleEnjoy} disabled={enjoyState === "sent"} style={{
+              background: enjoyState === "sent" ? "rgba(255,107,53,0.3)" : "rgba(255,255,255,0.04)", 
+              border: `1px solid ${enjoyState === "sent" ? "rgba(255,107,53,0.5)" : "rgba(255,255,255,0.08)"}`, 
+              color: enjoyState === "sent" ? "#fff" : "#d8d4cf",
+              padding: "6px 12px", borderRadius: 8, cursor: enjoyState === "sent" ? "default" : "pointer", 
+              fontSize: 11, fontWeight: 700, fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em", transition: "all 0.2s"
+            }}
+              onMouseEnter={e => { if (enjoyState !== "sent") { e.target.style.background = "rgba(255,255,255,0.08)"; } }}
+              onMouseLeave={e => { if (enjoyState !== "sent") { e.target.style.background = "rgba(255,255,255,0.04)"; } }}
+            >
+              {enjoyState === "sent" ? "👍 GLAD YOU'RE ENJOYING!" : "👍 ENJOYING THIS?"}
+            </button>
+        )}
+
+        {enjoyState === "mutual" && friendState === "none" && (
             <button onClick={sendFriendRequest} style={{
               background: "rgba(255,107,53,0.1)", border: "1px solid rgba(255,107,53,0.3)", color: "#ff6b35",
               padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 700,
@@ -722,15 +763,6 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
             >
               + ADD FRIEND
             </button>
-        )}
-        {friendState === "none" && timer > 480 && (
-            <div style={{
-              background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", color: "#666",
-              padding: "6px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700,
-              fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em"
-            }}>
-              FRIEND IN {timer - 480}s
-            </div>
         )}
         {friendState === "sent" && (
             <div style={{

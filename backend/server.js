@@ -100,6 +100,15 @@ io.on('connection', (socket) => {
     socket.to(data.room).emit('friend_reject');
   });
 
+  // Mutual Enjoy events
+  socket.on('enjoy_request', (data) => {
+      socket.to(data.room).emit('enjoy_request');
+  });
+
+  socket.on('enjoy_accept', (data) => {
+      socket.to(data.room).emit('enjoy_accept');
+  });
+
   // Timer extension signaling
   socket.on('extend_request', (data) => {
       socket.to(data.room).emit('extend_request');
