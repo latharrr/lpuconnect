@@ -370,7 +370,14 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
           host: url.hostname,
           port: url.port || (url.protocol === 'https:' ? 443 : 80),
           path: '/peerjs',
-          secure: url.protocol === 'https:'
+          secure: url.protocol === 'https:',
+          config: {
+              iceServers: [
+                  { urls: 'stun:stun.l.google.com:19302' },
+                  { urls: 'stun:stun1.l.google.com:19302' },
+                  { urls: 'stun:stun2.l.google.com:19302' }
+              ]
+          }
       });
       peerRef.current = newPeer;
 
