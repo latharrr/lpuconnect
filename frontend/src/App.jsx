@@ -229,7 +229,7 @@ function LandingScreen({ onLogin }) {
 }
 
 // ─── SCREEN: DASHBOARD ────────────────────────────────────────────────────────
-function DashboardScreen({ user, friends, onStartMatch, onStartDirectMatch }) {
+function DashboardScreen({ user, friends, onStartMatch, onStartDirectMatch, onLogout }) {
   const [bio, setBio] = useState(user.bio || "");
   const [savingBio, setSavingBio] = useState(false);
 
@@ -256,6 +256,16 @@ function DashboardScreen({ user, friends, onStartMatch, onStartDirectMatch }) {
           <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
             LPU<span style={{ color: "#ff6b35" }}>connect</span> <span style={{color: "#555"}}>// Dashboard</span>
           </h1>
+          <button onClick={onLogout} style={{
+             background: "transparent", border: "1px solid rgba(255,255,255,0.1)",
+             color: "#888", padding: "8px 16px", borderRadius: 8, cursor: "pointer",
+             fontFamily: "'Space Mono', monospace", fontSize: 12, transition: "color 0.2s"
+          }}
+             onMouseEnter={e => e.target.style.color = "#f0ede8"}
+             onMouseLeave={e => e.target.style.color = "#888"}
+          >
+             Logout
+          </button>
         </div>
 
         <div style={{ display: "flex", gap: 32, flexWrap: "wrap", alignItems: "flex-start" }}>
@@ -1331,11 +1341,53 @@ export default function App() {
   const [room, setRoom] = useState("");
   const [partnerId, setPartnerId] = useState("");
   const [isDirectChat, setIsDirectChat] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    const cached = localStorage.getItem("lpuconnect_user");
+    if (cached) {
+        try {
+            const user = JSON.parse(cached);
+            fetch(`${SOCKET_URL}/api/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: user.email, name: user.name, gender: user.gender })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.user) {
+                   setCurrentUser(data.user);
+                   setFriends(data.friends || []);
+                   setScreen("dashboard");
+                }
+            })
+            .catch(err => {
+                console.error("Silent login failed:", err);
+                setCurrentUser(user);
+                setScreen("dashboard");
+            })
+            .finally(() => setIsInitializing(false));
+        } catch (e) {
+            localStorage.removeItem("lpuconnect_user");
+            setIsInitializing(false);
+        }
+    } else {
+        setIsInitializing(false);
+    }
+  }, []);
 
   function handleLogin(user, userFriends) {
+    localStorage.setItem("lpuconnect_user", JSON.stringify(user));
     setCurrentUser(user);
     setFriends(userFriends);
     setScreen("dashboard");
+  }
+  
+  function handleLogout() {
+    localStorage.removeItem("lpuconnect_user");
+    setCurrentUser(null);
+    setFriends([]);
+    setScreen("landing");
   }
 
   function handleStartMatch() {
@@ -1380,6 +1432,15 @@ export default function App() {
     document.head.appendChild(link);
   }, []);
 
+  if (isInitializing) {
+      return (
+        <div style={{ minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Mono', monospace", color: "#666" }}>
+           <Noise />
+           Loading session...
+        </div>
+      );
+  }
+
   return (
     <div style={{ fontFamily: "'Space Mono', monospace" }}>
       {screen === "landing" && <LandingScreen onLogin={handleLogin} />}
@@ -1389,6 +1450,7 @@ export default function App() {
           friends={friends}
           onStartMatch={handleStartMatch}
           onStartDirectMatch={handleStartDirectMatch}
+          onLogout={handleLogout}
         />
       )}
       {screen === "matching" && (
