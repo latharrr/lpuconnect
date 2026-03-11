@@ -380,21 +380,43 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
           }
       });
       peerRef.current = newPeer;
+      
+      console.log("[WebRTC] Initializing Peer with ID:", socket.id);
+
+      newPeer.on("open", (id) => {
+          console.log("[WebRTC] Peer connection to tracking server opened. My ID:", id);
+      });
+      
+      newPeer.on("error", (err) => {
+          console.error("[WebRTC] Peerjs Global Error:", err, err.type);
+      });
 
       newPeer.on("call", (call) => {
+          console.log("[WebRTC] Received incoming call from:", call.peer);
           if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
               alert("Your browser does not support video calls.");
               return;
           }
           navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
+              console.log("[WebRTC] Incoming Call: Acquired local microphone/camera stream.");
               setLocalStream(stream);
               setVideoState("active");
               
+              console.log("[WebRTC] Incoming Call: Answering WebRTC call...");
               call.answer(stream); // Answer the call with an A/V stream.
               setCurrentCall(call);
               
               call.on("stream", (incomingStream) => {
+                  console.log("[WebRTC] Incoming Call: Received remote partner stream!");
                   setRemoteStream(incomingStream);
+              });
+              
+              call.on("close", () => {
+                  console.log("[WebRTC] Incoming Call: Call closed by partner.");
+              });
+              
+              call.on("error", (err) => {
+                  console.error("[WebRTC] Incoming Call: Call error", err);
               });
           }).catch((err) => {
               console.error("Failed to get local stream", err);
@@ -458,14 +480,25 @@ function ChatScreen({ userEmail, partner, room, partnerId, onSkip, onEnd }) {
          return;
      }
      navigator.mediaDevices.getUserMedia({ video: true, audio: true }).then((stream) => {
+        console.log("[WebRTC] Outgoing Call: Acquired local microphone/camera stream.");
         setLocalStream(stream);
         setVideoState("active");
         
+        console.log("[WebRTC] Outgoing Call: Dialing partner ID", partnerId);
         const call = peerRef.current.call(partnerId, stream);
         setCurrentCall(call);
 
         call.on("stream", (incomingStream) => {
+             console.log("[WebRTC] Outgoing Call: Received remote partner stream!");
              setRemoteStream(incomingStream);
+        });
+        
+        call.on("close", () => {
+             console.log("[WebRTC] Outgoing Call: Call closed by partner.");
+        });
+        
+        call.on("error", (err) => {
+             console.error("[WebRTC] Outgoing Call: Call error", err);
         });
      }).catch(err => {
          console.error("Error accessing media devices", err);
