@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import Peer from "peerjs";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 const socket = io(SOCKET_URL);
@@ -8,7 +10,7 @@ const socket = io(SOCKET_URL);
 const TAGLINES = [
   "Anonymous. Campus only. One click.",
   "30,000 strangers. One conversation away.",
-  "LPU's secret social layer.",
+  "The secret social layer for students.",
   "Skip the small talk. Or don't.",
 ];
 
@@ -44,8 +46,6 @@ function Avatar({ name, size = 48 }) {
 function LandingScreen({ onLogin }) {
   const [tagIdx, setTagIdx] = useState(0);
   const [visible, setVisible] = useState(true);
-  const [email, setEmail] = useState("");
-  const [name, setName] = useState("");
   const [gender, setGender] = useState("");
   const [error, setError] = useState("");
   const [pulse, setPulse] = useState(false);
@@ -64,24 +64,29 @@ function LandingScreen({ onLogin }) {
     return () => clearInterval(iv);
   }, []);
 
-  async function handleStart() {
-    if (!email.trim() || !name.trim() || !gender) { setError("Fill out all the details required."); return; }
-    if (!email.includes("@lpu.in") && !/^\d{8,12}$/.test(email.trim())) {
-      setError("Use your @lpu.in email or LPU reg number.");
+  async function handleGoogleSuccess(credentialResponse) {
+    if (!gender) {
+      setError("Please select a gender before logging in.");
       return;
     }
     setError("");
     setLoading(true);
+    
     try {
-        const res = await fetch(`${SOCKET_URL}/api/login`, {
+        const decoded = jwtDecode(credentialResponse.credential);
+        const { email, name, picture } = decoded;
+
+        const res = await fetch(`${SOCKET_URL}/api/login/google`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: email.trim(), name: name.trim(), gender })
+            body: JSON.stringify({ token: credentialResponse.credential, gender })
         });
-        if (!res.ok) throw new Error("Failed to login");
+        
+        if (!res.ok) throw new Error("Failed to authenticate with server");
         const data = await res.json();
         onLogin(data.user, data.friends);
     } catch (err) {
+        console.error("Google login error:", err);
         setError("Error connecting to server. Please try again.");
         setLoading(false);
     }
@@ -121,7 +126,7 @@ function LandingScreen({ onLogin }) {
             boxShadow: pulse ? "0 0 10px #ff6b35" : "none",
             transition: "box-shadow 0.4s ease"
           }} />
-          Lovely Professional University
+          University Network
         </div>
 
         <h1 className="landing-title" style={{
@@ -129,7 +134,7 @@ function LandingScreen({ onLogin }) {
           color: "#f0ede8", margin: "0 0 8px 0", letterSpacing: "-0.04em",
           lineHeight: 1
         }}>
-          LPU<span style={{ color: "#ff6b35" }}>connect</span>
+          Uni<span style={{ color: "#ff6b35" }}>connect</span>
         </h1>
 
         <p style={{
@@ -153,21 +158,6 @@ function LandingScreen({ onLogin }) {
 
         <div style={{ marginBottom: 12 }}>
           <div className="landing-inputs" style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
-            <input
-              type="text"
-              placeholder="First Name"
-              value={name}
-              onChange={e => { setName(e.target.value); setError(""); }}
-              style={{
-                flex: 1, padding: "16px 20px", boxSizing: "border-box",
-                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 12, color: "#f0ede8", fontSize: 14, outline: "none",
-                fontFamily: "'Space Mono', monospace",
-                transition: "border-color 0.2s"
-              }}
-              onFocus={e => e.target.style.borderColor = "rgba(255,107,53,0.5)"}
-              onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
-            />
             <select
                value={gender}
                onChange={e => { setGender(e.target.value); setError(""); }}
@@ -186,39 +176,22 @@ function LandingScreen({ onLogin }) {
                <option value="Female" style={{ color: "black" }}>Female</option>
                <option value="Other" style={{ color: "black" }}>Other</option>
             </select>
-          </div>
-          <input
-            type="text"
-            placeholder="reg@lpu.in  or  11234567"
-            value={email}
-            onChange={e => { setEmail(e.target.value); setError(""); }}
-            onKeyDown={e => e.key === "Enter" && handleStart()}
-            style={{
-              width: "100%", padding: "16px 20px", boxSizing: "border-box",
-              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 12, color: "#f0ede8", fontSize: 14, outline: "none",
-              fontFamily: "'Space Mono', monospace",
-              transition: "border-color 0.2s"
-            }}
-            onFocus={e => e.target.style.borderColor = "rgba(255,107,53,0.5)"}
-            onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
-          />
-          {error && <p style={{ color: "#ff6b35", fontSize: 11, marginTop: 8, textAlign: "left" }}>{error}</p>}
+           </div>
+          {error && <p style={{ color: "#ff6b35", fontSize: 11, marginTop: 8, textAlign: "center" }}>{error}</p>}
         </div>
 
-        <button onClick={handleStart} disabled={loading} style={{
-          width: "100%", padding: "18px", background: loading ? "#555" : "#ff6b35",
-          border: "none", borderRadius: 12, color: "#0a0a0a",
-          fontSize: 15, fontWeight: 700, fontFamily: "'Space Mono', monospace",
-          cursor: loading ? "default" : "pointer", letterSpacing: "0.05em",
-          transition: "transform 0.1s, box-shadow 0.2s",
-          boxShadow: "0 0 0 rgba(255,107,53,0)"
-        }}
-          onMouseEnter={e => { if (!loading) { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 8px 30px rgba(255,107,53,0.4)"; } }}
-          onMouseLeave={e => { if (!loading) { e.target.style.transform = "translateY(0)"; e.target.style.boxShadow = "0 0 0 rgba(255,107,53,0)"; } }}
-        >
-          {loading ? "AUTHENTICATING..." : "LOGIN / ENTER →"}
-        </button>
+        <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>
+            <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={() => {
+                    setError("Google Login Failed.");
+                }}
+                theme="filled_black"
+                shape="pill"
+                text="continue_with"
+                width={300}
+            />
+        </div>
 
         <p style={{ color: "#333", fontSize: 11, marginTop: 20, letterSpacing: "0.05em" }}>
           VERIFIED CAMPUS STUDENTS ONLY · ENCRYPTED · SAFE
@@ -254,7 +227,7 @@ function DashboardScreen({ user, friends, onlineUsers, onStartMatch, onStartDire
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 40 }}>
           <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
-            LPU<span style={{ color: "#ff6b35" }}>connect</span> <span style={{color: "#555"}}>// Dashboard</span>
+            Uni<span style={{ color: "#ff6b35" }}>connect</span> <span style={{color: "#555"}}>// Dashboard</span>
           </h1>
           <button onClick={onLogout} style={{
              background: "transparent", border: "1px solid rgba(255,255,255,0.1)",
@@ -573,8 +546,8 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
           setShowExtendBanner(true);
       }
       if (t <= 1) { 
-          // Do not hard skip anymore. Just sit at 0.
-          clearInterval(iv); 
+          clearInterval(iv);
+          handleSkip(); 
           return 0; 
       }
       return t - 1;
@@ -943,7 +916,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1a936f", display: "inline-block" }} />
-            <span style={{ color: "#1a936f", fontSize: 10, letterSpacing: "0.08em" }}>ONLINE · LPU VERIFIED</span>
+            <span style={{ color: "#1a936f", fontSize: 10, letterSpacing: "0.08em" }}>ONLINE · VERIFIED</span>
           </div>
         </div>
 
@@ -1375,14 +1348,14 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const cached = localStorage.getItem("lpuconnect_user");
+    const cached = localStorage.getItem("uniconnect_user");
     if (cached) {
         try {
             const user = JSON.parse(cached);
-            fetch(`${SOCKET_URL}/api/login`, {
+            fetch(`${SOCKET_URL}/api/login/resume`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: user.email, name: user.name, gender: user.gender })
+                body: JSON.stringify({ email: user.email })
             })
             .then(res => res.json())
             .then(data => {
@@ -1408,14 +1381,14 @@ export default function App() {
   }, []);
 
   function handleLogin(user, userFriends) {
-    localStorage.setItem("lpuconnect_user", JSON.stringify(user));
+    localStorage.setItem("uniconnect_user", JSON.stringify(user));
     setCurrentUser(user);
     setFriends(userFriends);
     setScreen("dashboard");
   }
   
   function handleLogout() {
-    localStorage.removeItem("lpuconnect_user");
+    localStorage.removeItem("uniconnect_user");
     setCurrentUser(null);
     setFriends([]);
     setScreen("landing");

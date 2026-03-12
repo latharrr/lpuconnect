@@ -3,7 +3,11 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { ExpressPeerServer } from 'peer';
+import { OAuth2Client } from 'google-auth-library';
 import { dbrun, dbget, dball } from './db.js';
+
+const CLIENT_ID = '184945357599-gsm4f58m1t25gsqp22mh7stl6i6i6va9.apps.googleusercontent.com';
+const client = new OAuth2Client(CLIENT_ID);
 
 const app = express();
 app.use(cors());
@@ -35,12 +39,18 @@ function broadcastOnlineUsers() {
 }
 
 // --- REST API ROUTES ---
-app.post('/api/login', async (req, res) => {
-    const { email, name, gender } = req.body;
-    if (!email || !name || !gender) return res.status(400).json({ error: "Missing fields" });
+app.post('/api/login/google', async (req, res) => {
+    const { token, gender } = req.body;
+    if (!token || !gender) return res.status(400).json({ error: "Missing token or gender" });
 
     try {
-        // Upsert user
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const { email, name } = payload;
+        
         await dbrun(
             `INSERT INTO users (id, email, name, gender) VALUES (?, ?, ?, ?)
              ON CONFLICT(email) DO UPDATE SET name=excluded.name, gender=excluded.gender`,
@@ -49,7 +59,6 @@ app.post('/api/login', async (req, res) => {
 
         const user = await dbget(`SELECT * FROM users WHERE email = ?`, [email]);
 
-        // Fetch mutual friends list (relational join)
         const friends = await dball(`
             SELECT u.email, u.name, u.gender, u.bio
             FROM friends f
@@ -59,7 +68,29 @@ app.post('/api/login', async (req, res) => {
 
         res.json({ user, friends });
     } catch (err) {
-        console.error("Login Error:", err);
+        console.error("Google Login Error:", err);
+        res.status(401).json({ error: "Invalid Google Token" });
+    }
+});
+
+app.post('/api/login/resume', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Missing email" });
+
+    try {
+        const user = await dbget(`SELECT * FROM users WHERE email = ?`, [email]);
+        if (!user) return res.status(404).json({ error: "User not found" });
+
+        const friends = await dball(`
+            SELECT u.email, u.name, u.gender, u.bio
+            FROM friends f
+            JOIN users u ON f.user_id_2 = u.email
+            WHERE f.user_id_1 = ?
+        `, [email]);
+
+        res.json({ user, friends });
+    } catch (err) {
+        console.error("Resume Login Error:", err);
         res.status(500).json({ error: "Internal Server Error" });
     }
 });
