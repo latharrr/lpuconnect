@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Initialize SQLite database
-const dbPath = path.resolve(__dirname, 'lpuconnect.sqlite');
+const dbPath = path.resolve(__dirname, 'uniconnect.sqlite');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
         console.error('Error opening database', err.message);
