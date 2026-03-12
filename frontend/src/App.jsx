@@ -555,19 +555,6 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
 
   const DisplayPartnerName = friendState === "friends" ? partnerName : "Student";
 
-  useEffect(() => {
-    if (videoState === "active" && localVideoRef.current && localStream) {
-      localVideoRef.current.srcObject = localStream;
-    }
-  }, [videoState, localStream]);
-
-  useEffect(() => {
-    if (videoState === "active" && remoteVideoRef.current && remoteStream) {
-      remoteVideoRef.current.srcObject = remoteStream;
-    }
-  }, [videoState, remoteStream]);
-
-
   // Auto-scroll
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -1025,7 +1012,17 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
             borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
             border: "1px solid rgba(255,255,255,0.06)", position: "relative", overflow: "hidden"
           }}>
-             <video ref={remoteVideoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+             <video 
+                autoPlay 
+                playsInline 
+                ref={el => {
+                   if (el && remoteStream && el.srcObject !== remoteStream) {
+                      el.srcObject = remoteStream;
+                   }
+                   remoteVideoRef.current = el;
+                }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+             />
             <div style={{
               position: "absolute", bottom: 10, left: 12, fontSize: 10,
               color: "#fff", letterSpacing: "0.08em", textShadow: "0 1px 2px rgba(0,0,0,0.8)",
@@ -1044,7 +1041,18 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
             borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
             border: "1px solid rgba(255,255,255,0.06)", position: "relative", overflow: "hidden", flexShrink: 0
           }}>
-             <video ref={localVideoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+             <video 
+                autoPlay 
+                playsInline 
+                muted
+                ref={el => {
+                   if (el && localStream && el.srcObject !== localStream) {
+                      el.srcObject = localStream;
+                   }
+                   localVideoRef.current = el;
+                }}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+             />
             <div style={{ position: "absolute", bottom: 8, left: 8, fontSize: 9, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.8)", zIndex: 2 }}>You</div>
           </div>
         </div>
