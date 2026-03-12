@@ -903,22 +903,27 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
       `}</style>
 
 
-      <div style={{
+      <div className="chat-header" style={{
         padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)",
-        display: "flex", alignItems: "center", gap: 12, background: "rgba(8,8,8,0.95)",
+        display: "flex", alignItems: "center", background: "rgba(8,8,8,0.95)",
         backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10
       }}>
-        <Avatar name={DisplayPartnerName} size={40} />
-        <div style={{ flex: 1 }}>
-          <div style={{ color: "#f0ede8", fontSize: 14, fontWeight: 700 }}>
-            {DisplayPartnerName} 
-            {friendState === "friends" && <span style={{fontSize: 11, color: "#888", marginLeft: 8, fontWeight: 'normal'}}>({partnerGender})</span>}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1a936f", display: "inline-block" }} />
-            <span style={{ color: "#1a936f", fontSize: 10, letterSpacing: "0.08em" }}>ONLINE · VERIFIED</span>
-          </div>
+        
+        <div className="chat-header-info" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Avatar name={DisplayPartnerName} size={40} />
+            <div style={{ flex: 1, textAlign: "left" }}>
+            <div style={{ color: "#f0ede8", fontSize: 14, fontWeight: 700 }}>
+                {DisplayPartnerName} 
+                {friendState === "friends" && <span style={{fontSize: 11, color: "#888", marginLeft: 8, fontWeight: 'normal'}}>({partnerGender})</span>}
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1a936f", display: "inline-block" }} />
+                <span style={{ color: "#1a936f", fontSize: 10, letterSpacing: "0.08em" }}>ONLINE · VERIFIED</span>
+            </div>
+            </div>
         </div>
+
+        <div className="chat-header-actions" style={{ display: "flex", alignItems: "center", gap: 8 }}>
 
         {enjoyState !== "mutual" && friendState === "none" && (
             <button onClick={handleEnjoy} disabled={enjoyState === "sent"} style={{
@@ -958,7 +963,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         )}
 
         {!isDirect && (
-          <div style={{
+          <div className="timer-badge" style={{
             background: timer < 60 ? "rgba(200,50,50,0.15)" : "rgba(255,255,255,0.05)",
             border: `1px solid ${timer < 60 ? "rgba(200,50,50,0.4)" : "rgba(255,255,255,0.08)"}`,
             borderRadius: 8, padding: "6px 12px", fontSize: 13, fontWeight: 700,
@@ -977,7 +982,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
           title="Report"
         >⚑</button>
 
-        <button onClick={handleSkip} style={{
+        <button className="skip-btn" onClick={handleSkip} style={{
           background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
           color: "#666", padding: "8px 16px", borderRadius: 8, cursor: "pointer",
           fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: "0.08em",
@@ -988,6 +993,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         >
           {isDirect ? "EXIT ✕" : "SKIP →"}
         </button>
+        </div>
       </div>
 
       {videoState === "active" && (
@@ -1198,12 +1204,13 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         <div ref={messagesEndRef} />
       </div>
 
-      <div style={{
+      <div className="chat-input-wrapper" style={{
         padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.06)",
         background: "rgba(8,8,8,0.95)", backdropFilter: "blur(12px)",
         display: "flex", gap: 8, alignItems: "center"
       }}>
         <input
+          className="chat-input-field"
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === "Enter" && sendMessage()}
@@ -1212,12 +1219,12 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
             flex: 1, padding: "12px 16px",
             background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: 12, color: "#f0ede8", fontSize: 13, outline: "none",
-            fontFamily: "'Space Mono', monospace",
+            fontFamily: "'Space Mono', monospace", width: "100%"
           }}
           onFocus={e => e.target.style.borderColor = "rgba(255,107,53,0.4)"}
           onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
         />
-        <button onClick={sendMessage} style={{
+        <button className="chat-send-btn" onClick={sendMessage} style={{
           background: "#ff6b35", border: "none", borderRadius: 10, width: 44, height: 44,
           color: "#0a0a0a", fontSize: 18, cursor: "pointer", display: "flex",
           alignItems: "center", justifyContent: "center", flexShrink: 0,

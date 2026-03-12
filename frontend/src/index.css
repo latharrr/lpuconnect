@@ -67,4 +67,51 @@ body {
     font-size: 10px !important;
     padding: 8px 4px !important;
   }
+  
+  /* --- NEW MOBILE FIXES --- */
+  
+  .chat-header {
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    justify-content: center !important;
+  }
+  
+  .chat-header-info {
+    flex: 1 1 100% !important;
+    justify-content: center !important;
+    text-align: center !important;
+    margin-bottom: 8px !important;
+  }
+  
+  .chat-header-actions {
+    flex: 1 1 100% !important;
+    justify-content: center !important;
+  }
+  
+  .skip-btn {
+    padding: 8px 16px !important;
+    font-size: 11px !important;
+  }
+  
+  .timer-badge {
+    padding: 6px 12px !important;
+    font-size: 11px !important;
+  }
+  
+  .chat-input-wrapper {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 8px !important;
+  }
+  
+  .chat-input-field {
+    padding: 12px 14px !important;
+    font-size: 12px !important;
+  }
+  
+  .chat-send-btn {
+    width: 44px !important;
+    height: 44px !important;
+  }
 }
