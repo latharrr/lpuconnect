@@ -229,7 +229,7 @@ function LandingScreen({ onLogin }) {
 }
 
 // ─── SCREEN: DASHBOARD ────────────────────────────────────────────────────────
-function DashboardScreen({ user, friends, onStartMatch, onStartDirectMatch, onLogout }) {
+function DashboardScreen({ user, friends, onlineUsers, onStartMatch, onStartDirectMatch, onLogout }) {
   const [bio, setBio] = useState(user.bio || "");
   const [savingBio, setSavingBio] = useState(false);
 
@@ -333,10 +333,15 @@ function DashboardScreen({ user, friends, onStartMatch, onStartDirectMatch, onLo
                          background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 12,
                          border: "1px solid rgba(255,255,255,0.04)"
                       }}>
-                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                             <Avatar name={friend.name} size={40} />
                             <div>
-                               <div style={{ fontSize: 14, fontWeight: 700 }}>{friend.name} <span style={{fontWeight: 'normal', fontSize: 11, color: "#666"}}>({friend.gender})</span></div>
+                               <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                                  {friend.name} <span style={{fontWeight: 'normal', fontSize: 11, color: "#666"}}>({friend.gender})</span>
+                                  {onlineUsers?.includes(friend.email) && (
+                                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#1a936f", boxShadow: "0 0 6px rgba(26,147,111,0.5)" }} title="Online"></span>
+                                  )}
+                               </div>
                                <div style={{ fontSize: 12, color: "#888", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>
                                   {friend.bio || "No bio set."}
                                </div>
@@ -560,6 +565,8 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
 
   // Timer countdown
   useEffect(() => {
+    if (isDirect) return; // No timer for friends
+    
     const iv = setInterval(() => setTimer(t => {
       // Show prompt at 2m (480s), 4m (360s), and 8m (120s) into the 10m chat
       if (t === 481 || t === 361 || t === 121) {
@@ -573,7 +580,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
       return t - 1;
     }), 1000);
     return () => clearInterval(iv);
-  }, []);
+  }, [isDirect]);
 
   // Socket logic
   useEffect(() => {
@@ -1134,7 +1141,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
           </div>
         ))}
 
-        {showExtendBanner && (
+        {!isDirect && showExtendBanner && (
             <div style={{
               background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
               borderRadius: 12, padding: "12px 16px", marginTop: 8,
@@ -1350,6 +1357,14 @@ export default function App() {
   const [partnerId, setPartnerId] = useState("");
   const [isDirectChat, setIsDirectChat] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+
+  useEffect(() => {
+    socket.on('online_users', (users) => {
+        setOnlineUsers(users);
+    });
+    return () => socket.off('online_users');
+  }, []);
 
   useEffect(() => {
     const cached = localStorage.getItem("lpuconnect_user");
@@ -1456,6 +1471,7 @@ export default function App() {
         <DashboardScreen
           user={currentUser}
           friends={friends}
+          onlineUsers={onlineUsers}
           onStartMatch={handleStartMatch}
           onStartDirectMatch={handleStartDirectMatch}
           onLogout={handleLogout}

@@ -26,6 +26,13 @@ const io = new Server(server, {
 
 let waitingUser = null;
 const activeRooms = new Map();
+const onlineUsers = new Map(); // socket.id -> email
+
+function broadcastOnlineUsers() {
+    // Get unique emails online
+    const uniqueEmails = Array.from(new Set(onlineUsers.values()));
+    io.emit('online_users', uniqueEmails);
+}
 
 // --- REST API ROUTES ---
 app.post('/api/login', async (req, res) => {
@@ -73,6 +80,14 @@ app.post('/api/profile/bio', async (req, res) => {
 
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
+  
+  // Register user email for online status
+  socket.on('register_user', (email) => {
+      if (email) {
+          onlineUsers.set(socket.id, email);
+          broadcastOnlineUsers();
+      }
+  });
 
   socket.on('start_chat', (data) => {
     const { email, peerId, name, gender } = data;
@@ -261,6 +276,12 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
+    
+    if (onlineUsers.has(socket.id)) {
+        onlineUsers.delete(socket.id);
+        broadcastOnlineUsers();
+    }
+    
     // Remove from queue if they disconnect while waiting
     if (waitingUser && waitingUser.socket.id === socket.id) {
         waitingUser = null;
