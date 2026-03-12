@@ -20,3 +20,51 @@ body {
   width: 100%;
   min-height: 100vh;
 }
+
+/* Mobile Responsive Adjustments */
+@media (max-width: 600px) {
+  .landing-inputs {
+    flex-direction: column !important;
+  }
+  .landing-title {
+    font-size: 16vw !important;
+  }
+  .dashboard-container {
+    padding: 20px 16px !important;
+  }
+  .chat-container {
+    padding: 12px 10px !important;
+    max-width: 100% !important;
+  }
+  .chat-messages {
+    height: calc(100dvh - 180px) !important;
+    padding: 12px 10px !important;
+  }
+  .video-container {
+    flex-direction: column !important;
+    position: relative !important;
+    padding: 8px !important;
+  }
+  .video-main {
+    aspect-ratio: 4/3 !important;
+    width: 100% !important;
+  }
+  .video-pip {
+    position: absolute !important;
+    width: 80px !important;
+    bottom: 16px !important;
+    right: 16px !important;
+    z-index: 10 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5) !important;
+  }
+  .video-controls {
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+  }
+  .video-control-btn {
+    flex: 1 1 calc(33% - 8px) !important;
+    justify-content: center !important;
+    font-size: 10px !important;
+    padding: 8px 4px !important;
+  }
+}

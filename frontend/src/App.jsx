@@ -124,7 +124,7 @@ function LandingScreen({ onLogin }) {
           Lovely Professional University
         </div>
 
-        <h1 style={{
+        <h1 className="landing-title" style={{
           fontSize: "clamp(52px, 12vw, 88px)", fontWeight: 700,
           color: "#f0ede8", margin: "0 0 8px 0", letterSpacing: "-0.04em",
           lineHeight: 1
@@ -152,7 +152,7 @@ function LandingScreen({ onLogin }) {
         </div>
 
         <div style={{ marginBottom: 12 }}>
-          <div style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
+          <div className="landing-inputs" style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
             <input
               type="text"
               placeholder="First Name"
@@ -244,7 +244,7 @@ function DashboardScreen({ user, friends, onlineUsers, onStartMatch, onStartDire
   }
 
   return (
-    <div style={{
+    <div className="dashboard-container" style={{
       minHeight: "100vh", background: "#080808", color: "#f0ede8",
       fontFamily: "'Space Mono', monospace", padding: "40px 24px", position: "relative",
     }}>
@@ -909,7 +909,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
   const secs = String(timer % 60).padStart(2, "0");
 
   return (
-    <div style={{
+    <div className="chat-container" style={{
       height: "100dvh", background: "#080808", display: "flex", flexDirection: "column",
       fontFamily: "'Space Mono', monospace", maxWidth: 680, margin: "0 auto",
       position: "relative", overflow: "hidden"
@@ -1010,11 +1010,11 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
       </div>
 
       {videoState === "active" && (
-        <div style={{
+        <div className="video-container" style={{
           background: "#0f0f0f", borderBottom: "1px solid rgba(255,255,255,0.06)",
           padding: 16, display: "flex", gap: 12, animation: "fadeUp 0.3s ease"
         }}>
-          <div style={{
+          <div className="video-main" style={{
             flex: 1, aspectRatio: "16/9", background: "linear-gradient(135deg,#1a1a1a,#0f0f0f)",
             borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
             border: "1px solid rgba(255,255,255,0.06)", position: "relative", overflow: "hidden"
@@ -1043,7 +1043,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
               zIndex: 2
             }} />
           </div>
-          <div style={{
+          <div className="video-pip" style={{
             width: 120, aspectRatio: "9/16", background: "linear-gradient(135deg,#1e1e1e,#0f0f0f)",
             borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
             border: "1px solid rgba(255,255,255,0.06)", position: "relative", overflow: "hidden", flexShrink: 0
@@ -1065,34 +1065,34 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         </div>
       )}
       {videoState === "active" && (
-        <div style={{ padding: "8px 16px", display: "flex", gap: 8, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <button onClick={toggleMute} style={{
+        <div className="video-controls" style={{ padding: "8px 16px", display: "flex", gap: 8, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <button className="video-control-btn" onClick={toggleMute} style={{
               background: isMuted ? "rgba(196,50,50,0.15)" : "rgba(255,255,255,0.04)",
               border: `1px solid ${isMuted ? "rgba(196,50,50,0.3)" : "rgba(255,255,255,0.08)"}`,
               color: isMuted ? "#c43232" : "#666",
               padding: "8px 14px", borderRadius: 8, cursor: "pointer",
               fontFamily: "'Space Mono', monospace", fontSize: 11,
-              display: "flex", alignItems: "center", gap: 6
+              display: "flex", alignItems: "center", gap: 6, justifyContent: "center"
           }}>
               🎤 {isMuted ? "Unmute" : "Mute"}
           </button>
-          <button onClick={toggleVideo} style={{
+          <button className="video-control-btn" onClick={toggleVideo} style={{
               background: isCameraOff ? "rgba(196,50,50,0.15)" : "rgba(255,255,255,0.04)",
               border: `1px solid ${isCameraOff ? "rgba(196,50,50,0.3)" : "rgba(255,255,255,0.08)"}`,
               color: isCameraOff ? "#c43232" : "#666",
               padding: "8px 14px", borderRadius: 8, cursor: "pointer",
               fontFamily: "'Space Mono', monospace", fontSize: 11,
-              display: "flex", alignItems: "center", gap: 6
+              display: "flex", alignItems: "center", gap: 6, justifyContent: "center"
           }}>
               📷 {isCameraOff ? "Turn On" : "Camera"}
           </button>
-          <button onClick={endVideo} style={{
+          <button className="video-control-btn" onClick={endVideo} style={{
               background: "rgba(196,50,50,0.15)",
               border: "1px solid rgba(196,50,50,0.3)",
               color: "#c43232",
               padding: "8px 14px", borderRadius: 8, cursor: "pointer",
               fontFamily: "'Space Mono', monospace", fontSize: 11,
-              display: "flex", alignItems: "center", gap: 6
+              display: "flex", alignItems: "center", gap: 6, justifyContent: "center"
           }}>
               📞 End Call
           </button>
@@ -1100,7 +1100,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
       )}
 
       {/* Messages */}
-      <div style={{
+      <div className="chat-messages" style={{
         flex: 1, overflowY: "auto", padding: "20px 16px",
         display: "flex", flexDirection: "column", gap: 12,
         minHeight: 0
