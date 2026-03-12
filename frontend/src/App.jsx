@@ -593,6 +593,11 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         setTimeout(onSkip, 2000);
     });
     
+    socket.on("partner_disconnected", () => {
+        setMessages(m => [...m, { from: "system", text: "Partner disconnected unexpectedly.", time: new Date() }]);
+        setTimeout(onSkip, 2000);
+    });
+    
     socket.on("video_request", () => {
         setIncomingVideo(true);
     });
@@ -657,6 +662,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
     return () => {
         socket.off("receive_message");
         socket.off("partner_skipped");
+        socket.off("partner_disconnected");
         socket.off("video_request");
         socket.off("video_accept");
         socket.off("video_reject");
@@ -978,14 +984,16 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
             </div>
         )}
 
-        <div style={{
-          background: timer < 60 ? "rgba(200,50,50,0.15)" : "rgba(255,255,255,0.05)",
-          border: `1px solid ${timer < 60 ? "rgba(200,50,50,0.4)" : "rgba(255,255,255,0.08)"}`,
-          borderRadius: 8, padding: "6px 12px", fontSize: 13, fontWeight: 700,
-          color: timer < 60 ? "#c43232" : "#555", letterSpacing: "0.05em"
-        }}>
-          {mins}:{secs}
-        </div>
+        {!isDirect && (
+          <div style={{
+            background: timer < 60 ? "rgba(200,50,50,0.15)" : "rgba(255,255,255,0.05)",
+            border: `1px solid ${timer < 60 ? "rgba(200,50,50,0.4)" : "rgba(255,255,255,0.08)"}`,
+            borderRadius: 8, padding: "6px 12px", fontSize: 13, fontWeight: 700,
+            color: timer < 60 ? "#c43232" : "#555", letterSpacing: "0.05em"
+          }}>
+            {mins}:{secs}
+          </div>
+        )}
 
         <button onClick={() => setShowReport(true)} style={{
           background: "transparent", border: "none", color: "#333", cursor: "pointer",
@@ -1005,7 +1013,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
           onMouseEnter={e => { e.target.style.background = "rgba(255,107,53,0.1)"; e.target.style.color = "#ff6b35"; e.target.style.borderColor = "rgba(255,107,53,0.3)"; }}
           onMouseLeave={e => { e.target.style.background = "rgba(255,255,255,0.04)"; e.target.style.color = "#666"; e.target.style.borderColor = "rgba(255,255,255,0.08)"; }}
         >
-          SKIP →
+          {isDirect ? "EXIT ✕" : "SKIP →"}
         </button>
       </div>
 
@@ -1244,7 +1252,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         }}>↑</button>
 
         {videoState === "idle" && (
-          timer > 570 ? (
+          (!isDirect && timer > 570) ? (
             <div style={{
               padding: "0 12px", height: 44, color: "#888", fontSize: 11,
               display: "flex", alignItems: "center", justifyContent: "center",
@@ -1436,7 +1444,11 @@ export default function App() {
   }
 
   function handleSkip() {
-    setScreen("matching");
+    if (isDirectChat) {
+      setScreen("dashboard");
+    } else {
+      setScreen("matching");
+    }
     setPartner("");
     setRoom("");
     setPartnerId("");

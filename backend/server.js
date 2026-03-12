@@ -282,6 +282,13 @@ io.on('connection', (socket) => {
         broadcastOnlineUsers();
     }
     
+    // Notify rooms about disconnection
+    const rooms = Array.from(socket.rooms);
+    // socket.rooms contains the socket.id itself, so filter it out
+    rooms.filter(r => r !== socket.id).forEach(roomName => {
+        socket.to(roomName).emit('partner_disconnected');
+    });
+
     // Remove from queue if they disconnect while waiting
     if (waitingUser && waitingUser.socket.id === socket.id) {
         waitingUser = null;
