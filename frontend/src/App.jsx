@@ -668,8 +668,19 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
 
   // Peer JS logic initialization
   useEffect(() => {
+      if (!socket.id) {
+          // Socket not connected yet, wait for it
+          const onConnect = () => initPeer();
+          socket.on('connect', onConnect);
+          return () => socket.off('connect', onConnect);
+      }
+      return initPeer();
+  }, []);
+
+  function initPeer() {
       const url = new URL(SOCKET_URL);
-      const safePeerId = socket.id.replace(/[^a-zA-Z0-9]/g, "");
+      const rawId = socket.id || ('fallback' + Math.random().toString(36).substring(2));
+      const safePeerId = rawId.replace(/[^a-zA-Z0-9]/g, "");
       
       const newPeer = new Peer(safePeerId, {
           host: url.hostname,
@@ -776,8 +787,8 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
 
       return () => {
           newPeer.destroy();
-      }
-  }, []);
+      };
+  }
 
   const closeVideoAndStreams = () => {
         setVideoState("idle");
