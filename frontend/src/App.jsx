@@ -7,7 +7,32 @@ let SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 if (Capacitor.isNativePlatform()) {
     SOCKET_URL = "https://lpuconnect.onrender.com";
 }
-const socket = io(SOCKET_URL);
+const socket = io(SOCKET_URL, {
+    reconnection: true,
+    reconnectionAttempts: 10,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    timeout: 20000,
+    transports: ['websocket', 'polling'],
+});
+
+// Helper: optimize video bitrate after call connects
+function optimizeVideoBitrate(peerConnection, maxBitrateKbps) {
+    if (!peerConnection) return;
+    try {
+        const senders = peerConnection.getSenders();
+        senders.forEach(function(sender) {
+            if (sender.track && sender.track.kind === 'video') {
+                var params = sender.getParameters();
+                if (!params.encodings) params.encodings = [{}];
+                params.encodings[0].maxBitrate = maxBitrateKbps * 1000;
+                sender.setParameters(params).catch(function() {});
+            }
+        });
+    } catch (e) {
+        // Silently fail on older browsers
+    }
+}
 
 const TAGLINES = [
   "Anonymous. Campus only. One click.",
@@ -769,6 +794,10 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
               call.on("stream", (incomingStream) => {
                   console.log("[WebRTC] Incoming Call: Received remote partner stream!");
                   setRemoteStream(incomingStream);
+                  // Optimize video bitrate to 500kbps for stable mobile quality
+                  if (call.peerConnection) {
+                      optimizeVideoBitrate(call.peerConnection, 500);
+                  }
               });
               
               call.on("close", () => {
@@ -878,6 +907,10 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         call.on("stream", (incomingStream) => {
              console.log("[WebRTC] Outgoing Call: Received remote partner stream!");
              setRemoteStream(incomingStream);
+             // Optimize video bitrate to 500kbps for stable mobile quality
+             if (call.peerConnection) {
+                 optimizeVideoBitrate(call.peerConnection, 500);
+             }
         });
         
         call.on("close", () => {
