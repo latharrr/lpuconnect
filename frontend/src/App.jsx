@@ -667,7 +667,24 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
           config: {
               iceServers: [
                   { urls: 'stun:stun.l.google.com:19302' },
-                  { urls: 'stun:global.stun.twilio.com:3478' }
+                  { urls: 'stun:stun1.l.google.com:19302' },
+                  { urls: 'stun:stun2.l.google.com:19302' },
+                  { urls: 'stun:global.stun.twilio.com:3478' },
+                  {
+                      urls: 'turn:openrelay.metered.ca:80',
+                      username: 'openrelayproject',
+                      credential: 'openrelayproject'
+                  },
+                  {
+                      urls: 'turn:openrelay.metered.ca:443',
+                      username: 'openrelayproject',
+                      credential: 'openrelayproject'
+                  },
+                  {
+                      urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+                      username: 'openrelayproject',
+                      credential: 'openrelayproject'
+                  }
               ],
               sdpSemantics: 'unified-plan'
           }
@@ -690,16 +707,38 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
               alert("Your browser does not support video calls.");
               return;
           }
-          navigator.mediaDevices.getUserMedia({
-              video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 } },
-              audio: true
-          }).then((stream) => {
-              console.log("[WebRTC] Incoming Call: Acquired local microphone/camera stream.");
+          const getMediaStream = () => {
+              return navigator.mediaDevices.getUserMedia({
+                  video: {
+                      facingMode: 'user',
+                      width: { ideal: 1280, min: 480 },
+                      height: { ideal: 720, min: 360 },
+                      frameRate: { ideal: 30, min: 15 }
+                  },
+                  audio: {
+                      echoCancellation: true,
+                      noiseSuppression: true,
+                      autoGainControl: true
+                  }
+              }).catch((camErr) => {
+                  console.warn("[WebRTC] HD camera failed, trying basic camera:", camErr.message);
+                  return navigator.mediaDevices.getUserMedia({
+                      video: { facingMode: 'user' },
+                      audio: { echoCancellation: true, noiseSuppression: true }
+                  });
+              }).catch((camErr2) => {
+                  console.warn("[WebRTC] Camera failed entirely, trying audio-only:", camErr2.message);
+                  return navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+              });
+          };
+
+          getMediaStream().then((stream) => {
+              console.log("[WebRTC] Incoming Call: Acquired local stream. Video tracks:", stream.getVideoTracks().length);
               setLocalStream(stream);
               setVideoState("active");
               
               console.log("[WebRTC] Incoming Call: Answering WebRTC call...");
-              call.answer(stream); // Answer the call with an A/V stream.
+              call.answer(stream);
               setCurrentCall(call);
               
               call.on("stream", (incomingStream) => {
@@ -715,8 +754,8 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
                   console.error("[WebRTC] Incoming Call: Call error", err);
               });
           }).catch((err) => {
-              console.error("Failed to get local stream", err);
-              alert("Camera access denied or device not found: " + err.message);
+              console.error("Failed to get any media stream", err);
+              alert("Could not access microphone or camera. Please check your permissions in browser settings.");
               setVideoState("idle");
           });
       });
@@ -775,11 +814,33 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
          setVideoState("idle");
          return;
      }
-     navigator.mediaDevices.getUserMedia({
-         video: { width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 24, max: 30 } },
-         audio: true
-     }).then((stream) => {
-        console.log("[WebRTC] Outgoing Call: Acquired local microphone/camera stream.");
+     const getMediaStream = () => {
+         return navigator.mediaDevices.getUserMedia({
+             video: {
+                 facingMode: 'user',
+                 width: { ideal: 1280, min: 480 },
+                 height: { ideal: 720, min: 360 },
+                 frameRate: { ideal: 30, min: 15 }
+             },
+             audio: {
+                 echoCancellation: true,
+                 noiseSuppression: true,
+                 autoGainControl: true
+             }
+         }).catch((camErr) => {
+             console.warn("[WebRTC] HD camera failed, trying basic camera:", camErr.message);
+             return navigator.mediaDevices.getUserMedia({
+                 video: { facingMode: 'user' },
+                 audio: { echoCancellation: true, noiseSuppression: true }
+             });
+         }).catch((camErr2) => {
+             console.warn("[WebRTC] Camera failed entirely, trying audio-only:", camErr2.message);
+             return navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+         });
+     };
+
+     getMediaStream().then((stream) => {
+        console.log("[WebRTC] Outgoing Call: Acquired local stream. Video tracks:", stream.getVideoTracks().length);
         setLocalStream(stream);
         setVideoState("active");
         
@@ -801,7 +862,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         });
      }).catch(err => {
          console.error("Error accessing media devices", err);
-         alert("It looks like you don't have a camera or blocked the permission. Error: " + err.message);
+         alert("Could not access microphone or camera. Please check your permissions in browser settings.");
          setVideoState("idle");
      });
   }
