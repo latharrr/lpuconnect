@@ -1,5 +1,8 @@
 {
   "appId": "com.lpuconnect.app",
   "appName": "LPUConnect",
-  "webDir": "dist"
+  "webDir": "dist",
+  "server": {
+    "cleartext": true
+  }
 }

@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import Peer from "peerjs";
-import { jwtDecode } from "jwt-decode";
-import { jwtDecode } from "jwt-decode";
+import { Capacitor } from "@capacitor/core";
 
-const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+let SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+if (Capacitor.isNativePlatform()) {
+    SOCKET_URL = "https://lpuconnect.onrender.com";
+}
 const socket = io(SOCKET_URL);
 
 const TAGLINES = [
