@@ -7,7 +7,20 @@
     <title>UniConnect</title>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root"><p style="color:white;background:#080808;padding:20px;font-family:monospace;margin:0;min-height:100vh;">Loading app...</p></div>
+    <div id="error-display" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#1a0000;color:#ff4444;padding:20px;font-family:monospace;font-size:13px;overflow:auto;z-index:99999;white-space:pre-wrap;word-break:break-all;"></div>
+    <script>
+      window.onerror = function(msg, src, line, col, err) {
+        var el = document.getElementById('error-display');
+        el.style.display = 'block';
+        el.innerHTML += '<b>JS ERROR:</b>\n' + msg + '\n\nFile: ' + src + '\nLine: ' + line + ', Col: ' + col + '\n\n' + (err && err.stack ? err.stack : '') + '\n\n---\n\n';
+      };
+      window.addEventListener('unhandledrejection', function(e) {
+        var el = document.getElementById('error-display');
+        el.style.display = 'block';
+        el.innerHTML += '<b>PROMISE ERROR:</b>\n' + (e.reason ? (e.reason.message || e.reason) : 'Unknown') + '\n\n' + (e.reason && e.reason.stack ? e.reason.stack : '') + '\n\n---\n\n';
+      });
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
