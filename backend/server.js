@@ -73,6 +73,31 @@ app.post('/api/login/google', async (req, res) => {
     }
 });
 
+app.post('/api/login/guest', async (req, res) => {
+    const { gender } = req.body;
+    if (!gender) return res.status(400).json({ error: "Missing gender" });
+
+    try {
+        const randomId = Math.floor(10000 + Math.random() * 90000);
+        const email = `guest${randomId}@uniconnect.local`;
+        const name = `Guest ${randomId}`;
+        
+        await dbrun(
+            `INSERT INTO users (id, email, name, gender) VALUES (?, ?, ?, ?)
+             ON CONFLICT(email) DO UPDATE SET name=excluded.name, gender=excluded.gender`,
+            [email, email, name, gender]
+        );
+
+        const user = await dbget(`SELECT * FROM users WHERE email = ?`, [email]);
+        const friends = []; // Brand new guest users won't have friends yet
+
+        res.json({ user, friends });
+    } catch (err) {
+        console.error("Guest Login Error:", err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
 app.post('/api/login/resume', async (req, res) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: "Missing email" });

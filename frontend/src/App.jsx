@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import Peer from "peerjs";
-import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 import { jwtDecode } from "jwt-decode";
 
 const SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
@@ -64,7 +64,7 @@ function LandingScreen({ onLogin }) {
     return () => clearInterval(iv);
   }, []);
 
-  async function handleGoogleSuccess(credentialResponse) {
+  async function handleGuestLogin() {
     if (!gender) {
       setError("Please select a gender before logging in.");
       return;
@@ -73,20 +73,17 @@ function LandingScreen({ onLogin }) {
     setLoading(true);
     
     try {
-        const decoded = jwtDecode(credentialResponse.credential);
-        const { email, name, picture } = decoded;
-
-        const res = await fetch(`${SOCKET_URL}/api/login/google`, {
+        const res = await fetch(`${SOCKET_URL}/api/login/guest`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: credentialResponse.credential, gender })
+            body: JSON.stringify({ gender })
         });
         
         if (!res.ok) throw new Error("Failed to authenticate with server");
         const data = await res.json();
         onLogin(data.user, data.friends);
     } catch (err) {
-        console.error("Google login error:", err);
+        console.error("Guest login error:", err);
         setError("Error connecting to server. Please try again.");
         setLoading(false);
     }
@@ -181,16 +178,20 @@ function LandingScreen({ onLogin }) {
         </div>
 
         <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>
-            <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={() => {
-                    setError("Google Login Failed.");
+            <button 
+                onClick={handleGuestLogin}
+                disabled={loading}
+                style={{
+                    background: "#ff6b35", color: "#000", border: "none",
+                    padding: "16px 24px", borderRadius: 100, fontSize: 14,
+                    fontWeight: 700, fontFamily: "sans-serif", display: "flex",
+                    alignItems: "center", gap: 12, cursor: "pointer", width: 300,
+                    justifyContent: "center", letterSpacing: "0.05em",
+                    opacity: loading ? 0.7 : 1
                 }}
-                theme="filled_black"
-                shape="pill"
-                text="continue_with"
-                width={300}
-            />
+            >
+                {loading ? "Generating Profile..." : "ENTER ANONYMOUSLY"}
+            </button>
         </div>
 
         <p style={{ color: "#333", fontSize: 11, marginTop: 20, letterSpacing: "0.05em" }}>
