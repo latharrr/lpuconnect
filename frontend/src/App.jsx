@@ -224,6 +224,18 @@ function LandingScreen({ onLogin }) {
         <p style={{ color: "#333", fontSize: 11, marginTop: 20, letterSpacing: "0.05em" }}>
           VERIFIED CAMPUS STUDENTS ONLY · ENCRYPTED · SAFE
         </p>
+
+        <a href="/uniconnect.apk" download style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            marginTop: 16, padding: "12px 24px", borderRadius: 100,
+            background: "rgba(255,107,53,0.08)", border: "1px solid rgba(255,107,53,0.3)",
+            color: "#ff6b35", fontSize: 12, fontWeight: 700,
+            fontFamily: "'Space Mono', monospace", textDecoration: "none",
+            letterSpacing: "0.05em", width: 300, margin: "16px auto 0",
+            cursor: "pointer", transition: "all 0.2s"
+        }}>
+            📱 DOWNLOAD ANDROID APP
+        </a>
       </div>
     </div>
   );
