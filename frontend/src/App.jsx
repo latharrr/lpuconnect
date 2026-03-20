@@ -534,6 +534,12 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
   const [remoteStream, setRemoteStream] = useState(null);
   const [currentCall, setCurrentCall] = useState(null);
 
+  // Refs for closures avoiding stale state
+  const localStreamRef = useRef(null);
+  const currentCallRef = useRef(null);
+  useEffect(() => { localStreamRef.current = localStream; }, [localStream]);
+  useEffect(() => { currentCallRef.current = currentCall; }, [currentCall]);
+
   const DisplayPartnerName = friendState === "friends" ? partnerName : "Student";
 
   // Auto-scroll
@@ -557,6 +563,10 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
     }), 1000);
     return () => clearInterval(iv);
   }, [isDirect]);
+
+  // Socket Ref for closures
+  const enjoyStateRef = useRef(enjoyState);
+  useEffect(() => { enjoyStateRef.current = enjoyState; }, [enjoyState]);
 
   // Socket logic
   useEffect(() => {
@@ -607,9 +617,11 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
     });
 
     socket.on("enjoy_request", () => {
-        setEnjoyState(prev => prev === "sent" ? "mutual" : "received");
-        if (enjoyState === "sent") {
+        if (enjoyStateRef.current === "sent") {
+            setEnjoyState("mutual");
             setMessages(m => [...m, { from: "system", text: `You both enjoyed this chat! Adding friends is now unlocked.`, time: new Date() }]);
+        } else {
+            setEnjoyState("received");
         }
     });
 
@@ -652,7 +664,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         socket.off("extend_accept");
         socket.off("extend_reject");
     };
-  }, [enjoyState]);
+  }, [isDirect]);
 
   // Peer JS logic initialization
   useEffect(() => {
@@ -735,11 +747,13 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
           getMediaStream().then((stream) => {
               console.log("[WebRTC] Incoming Call: Acquired local stream. Video tracks:", stream.getVideoTracks().length);
               setLocalStream(stream);
+              localStreamRef.current = stream; // Update ref
               setVideoState("active");
               
               console.log("[WebRTC] Incoming Call: Answering WebRTC call...");
               call.answer(stream);
               setCurrentCall(call);
+              currentCallRef.current = call; // Update ref
               
               call.on("stream", (incomingStream) => {
                   console.log("[WebRTC] Incoming Call: Received remote partner stream!");
@@ -767,9 +781,9 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
 
   const closeVideoAndStreams = () => {
         setVideoState("idle");
-        if (currentCall) currentCall.close();
-        if (localStream) {
-            localStream.getTracks().forEach(track => track.stop());
+        if (currentCallRef.current) currentCallRef.current.close();
+        if (localStreamRef.current) {
+            localStreamRef.current.getTracks().forEach(track => track.stop());
             setLocalStream(null);
         }
         setRemoteStream(null);
@@ -842,11 +856,13 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
      getMediaStream().then((stream) => {
         console.log("[WebRTC] Outgoing Call: Acquired local stream. Video tracks:", stream.getVideoTracks().length);
         setLocalStream(stream);
+        localStreamRef.current = stream; // Update ref directly
         setVideoState("active");
         
         console.log("[WebRTC] Outgoing Call: Dialing partner ID", partnerId);
         const call = peerRef.current.call(partnerId, stream);
         setCurrentCall(call);
+        currentCallRef.current = call; // Update ref directly
 
         call.on("stream", (incomingStream) => {
              console.log("[WebRTC] Outgoing Call: Received remote partner stream!");
@@ -1271,7 +1287,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
       <div className="chat-input-wrapper" style={{
         padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.06)",
         background: "rgba(8,8,8,0.95)", backdropFilter: "blur(12px)",
-        display: "flex", gap: 8, alignItems: "center"
+        display: "flex", gap: 8, alignItems: "center", minWidth: 0
       }}>
         <input
           className="chat-input-field"
@@ -1280,7 +1296,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
           onKeyDown={e => e.key === "Enter" && sendMessage()}
           placeholder="Type a message..."
           style={{
-            flex: 1, padding: "12px 16px",
+            flex: 1, padding: "12px 16px", minWidth: 0,
             background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
             borderRadius: 12, color: "#f0ede8", fontSize: 13, outline: "none",
             fontFamily: "'Space Mono', monospace", width: "100%"
@@ -1296,12 +1312,13 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         }}>↑</button>
 
         {videoState === "idle" && (
-          (!isDirect && timer > 570) ? (
+          (!isDirect && friendState !== "friends" && timer > 570) ? (
             <div style={{
               padding: "0 12px", height: 44, color: "#888", fontSize: 11,
               display: "flex", alignItems: "center", justifyContent: "center",
               background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
-              borderRadius: 10, fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em"
+              borderRadius: 10, fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em",
+              flexShrink: 0, whiteSpace: "nowrap"
             }}>
               VIDEO IN {timer - 570}s
             </div>
