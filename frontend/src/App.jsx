@@ -379,9 +379,18 @@ function MatchingScreen({ userEmail, userName, userGender, onMatched, onCancel }
   useEffect(() => {
     const d = setInterval(() => setDots(p => p.length >= 3 ? "." : p + "."), 500);
 
-    // Send the sanitized peerId we will be using
-    const safePeerId = socket.id.replace(/[^a-zA-Z0-9]/g, "");
-    socket.emit("start_chat", { email: userEmail, peerId: safePeerId, name: userName, gender: userGender });
+    const startMatch = () => {
+        if (!socket.id) return; // Safety check
+        const safePeerId = socket.id.replace(/[^a-zA-Z0-9]/g, "");
+        socket.emit("start_chat", { email: userEmail, peerId: safePeerId, name: userName, gender: userGender });
+    };
+
+    // If socket is already connected, start immediately; otherwise wait
+    if (socket.connected && socket.id) {
+        startMatch();
+    } else {
+        socket.on('connect', startMatch);
+    }
     
     socket.on("matched", (data) => {
         onMatched(data.partnerEmail, data.room, data.partnerId, data.partnerName, data.partnerGender);
@@ -390,13 +399,11 @@ function MatchingScreen({ userEmail, userName, userGender, onMatched, onCancel }
     return () => { 
         clearInterval(d); 
         socket.off("matched");
+        socket.off("connect", startMatch);
     };
   }, []);
   
   const handleCancel = () => {
-      // Disconnect or unqueue handled on server unmount/disconnect realistically
-      socket.disconnect(); 
-      socket.connect();
       onCancel();
   }
 
