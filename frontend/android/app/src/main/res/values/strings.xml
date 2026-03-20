@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">LPUConnect</string>
+    <string name="title_activity_main">LPUConnect</string>
+    <string name="package_name">com.lpuconnect.app</string>
+    <string name="custom_url_scheme">com.lpuconnect.app</string>
+</resources>
