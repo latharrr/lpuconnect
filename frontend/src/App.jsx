@@ -74,8 +74,52 @@ function Avatar({ name, size = 48 }) {
   );
 }
 
+// ─── SCREEN: SERVER WAKEUP ────────────────────────────────────────────────────
+function ServerWakeupUI() {
+    const [timeLeft, setTimeLeft] = useState(60);
+
+    useEffect(() => {
+        const iv = setInterval(() => setTimeLeft(t => t > 0 ? t - 1 : 0), 1000);
+        return () => clearInterval(iv);
+    }, []);
+
+    return (
+        <div style={{
+            position: "fixed", inset: 0, zIndex: 9999, background: "rgba(8,8,8,0.95)",
+            backdropFilter: "blur(10px)", display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", fontFamily: "'Space Mono', monospace",
+            color: "#f0ede8", padding: 24, textAlign: "center"
+        }}>
+            <div style={{
+                width: 50, height: 50, borderRadius: "50%", border: "3px solid transparent",
+                borderTopColor: "#ff6b35", borderRightColor: "#ff6b35",
+                animation: "spin 1s linear infinite", marginBottom: 24
+            }} />
+            <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
+            
+            <h2 style={{ color: "#ff6b35", fontSize: 24, margin: "0 0 16px 0", fontWeight: 700 }}>Server Waking Up...</h2>
+            <p style={{ maxWidth: 460, color: "#888", fontSize: 13, lineHeight: 1.6, margin: "0 0 32px 0" }}>
+                UniConnect is a non-profit startup running on a free-tier server. 
+                Because it was asleep, it is currently spinning up. This usually takes about a minute.
+            </p>
+            
+            <div style={{
+                background: "rgba(255,107,53,0.05)", border: "1px solid rgba(255,107,53,0.2)",
+                padding: "20px 40px", borderRadius: 16, display: "flex", flexDirection: "column", gap: 8
+            }}>
+                <div style={{ fontSize: 11, color: "#ff6b35", letterSpacing: "0.1em", fontWeight: 700 }}>ESTIMATED TIME</div>
+                <div style={{ fontSize: 40, fontWeight: 700, color: "#f0ede8", letterSpacing: "0.05em" }}>00:{timeLeft.toString().padStart(2, '0')}</div>
+            </div>
+            
+            <p style={{ color: "#555", fontSize: 11, marginTop: 40, letterSpacing: "0.05em" }}>
+                PLEASE DON'T RELOAD THE PAGE · IT WILL CONNECT AUTOMATICALLY
+            </p>
+        </div>
+    );
+}
+
 // ─── SCREEN: LANDING ──────────────────────────────────────────────────────────
-function LandingScreen({ onLogin }) {
+function LandingScreen({ onLogin, onWakeup }) {
   const [tagIdx, setTagIdx] = useState(0);
   const [visible, setVisible] = useState(true);
   const [gender, setGender] = useState("");
@@ -104,6 +148,10 @@ function LandingScreen({ onLogin }) {
     setError("");
     setLoading(true);
     
+    const wakeTimer = setTimeout(() => {
+       if (onWakeup) onWakeup(true);
+    }, 3000);
+    
     try {
         const res = await fetch(`${SOCKET_URL}/api/login/guest`, {
             method: 'POST',
@@ -111,6 +159,9 @@ function LandingScreen({ onLogin }) {
             body: JSON.stringify({ gender })
         });
         
+        clearTimeout(wakeTimer);
+        if (onWakeup) onWakeup(false);
+
         if (!res.ok) throw new Error("Failed to authenticate with server");
         const data = await res.json();
         // Store session token
@@ -126,6 +177,8 @@ function LandingScreen({ onLogin }) {
         }
         onLogin(data.user, data.friends);
     } catch (err) {
+        clearTimeout(wakeTimer);
+        if (onWakeup) onWakeup(false);
         console.error("Guest login error:", err);
         setError("Error connecting to server. Please try again.");
         setLoading(false);
@@ -1538,6 +1591,7 @@ export default function App() {
   const [isDirectChat, setIsDirectChat] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [isWakingServer, setIsWakingServer] = useState(false);
 
   useEffect(() => {
     socket.on('online_users', (users) => {
@@ -1562,12 +1616,21 @@ export default function App() {
     if (cached) {
         try {
             const user = JSON.parse(cached);
+            
+            const wakeTimer = setTimeout(() => {
+                setIsWakingServer(true);
+            }, 3000);
+
             fetch(`${SOCKET_URL}/api/login/resume`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: user.email })
             })
-            .then(res => res.json())
+            .then(res => {
+                clearTimeout(wakeTimer);
+                setIsWakingServer(false);
+                return res.json();
+            })
             .then(data => {
                 if (data.user) {
                    // Update session token
@@ -1586,6 +1649,8 @@ export default function App() {
                 }
             })
             .catch(err => {
+                clearTimeout(wakeTimer);
+                setIsWakingServer(false);
                 console.error("Silent login failed:", err);
                 setCurrentUser(user);
                 setScreen("dashboard");
@@ -1668,13 +1733,15 @@ export default function App() {
         <div style={{ minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Mono', monospace", color: "#666" }}>
            <Noise />
            Loading session...
+           {isWakingServer && <ServerWakeupUI />}
         </div>
       );
   }
 
   return (
     <div style={{ fontFamily: "'Space Mono', monospace" }}>
-      {screen === "landing" && <LandingScreen onLogin={handleLogin} />}
+      {isWakingServer && <ServerWakeupUI />}
+      {screen === "landing" && <LandingScreen onLogin={handleLogin} onWakeup={setIsWakingServer} />}
       {screen === "dashboard" && (
         <DashboardScreen
           user={currentUser}
