@@ -2,7 +2,7 @@
 
 > Anonymous campus chat & video calls for university students.
 
-**Live:** [lputv.vercel.app](https://lputv.vercel.app) · **Backend:** [lpuconnect.onrender.com](https://lpuconnect.onrender.com)
+**Live:** [uniconnect.deepanshulathar.dev](https://uniconnect.deepanshulathar.dev) · **Backend:** [lpuconnect.onrender.com](https://lpuconnect.onrender.com)
 
 ---
 
