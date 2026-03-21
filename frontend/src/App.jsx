@@ -9,11 +9,11 @@ if (Capacitor.isNativePlatform()) {
 }
 const socket = io(SOCKET_URL, {
     reconnection: true,
-    reconnectionAttempts: 10,
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
     timeout: 20000,
-    transports: ['websocket', 'polling'],
+    transports: ['polling', 'websocket'],
 });
 
 // Helper: optimize video bitrate after call connects
