@@ -78,9 +78,12 @@ app.post('/api/login/guest', async (req, res) => {
     if (!gender) return res.status(400).json({ error: "Missing gender" });
 
     try {
-        const randomId = Math.floor(10000 + Math.random() * 90000);
-        const email = `guest${randomId}@uniconnect.local`;
-        const name = `Guest ${randomId}`;
+        // Use longer random ID to avoid collisions (62^12 range)
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let randomId = '';
+        for (let i = 0; i < 12; i++) randomId += chars.charAt(Math.floor(Math.random() * chars.length));
+        const email = `guest_${randomId}@uniconnect.local`;
+        const name = `Guest-${randomId.slice(0, 6)}`;
         
         await dbrun(
             `INSERT INTO users (id, email, name, gender) VALUES (?, ?, ?, ?)
@@ -251,6 +254,16 @@ io.on('connection', (socket) => {
       // Notify partner
       socket.to(room).emit('partner_skipped');
       socket.leave(room);
+      // Clean up room tracking
+      activeRooms.delete(room);
+  });
+
+  // Cancel match — clear waiting queue if this user is waiting
+  socket.on('cancel_match', () => {
+      if (waitingUser && waitingUser.socket.id === socket.id) {
+          waitingUser = null;
+          console.log(`User ${socket.id} cancelled matching, removed from queue.`);
+      }
   });
   
   // Friend system signaling
@@ -349,6 +362,21 @@ io.on('connection', (socket) => {
     // Remove from queue if they disconnect while waiting
     if (waitingUser && waitingUser.socket.id === socket.id) {
         waitingUser = null;
+    }
+
+    // Clean up activeRooms entries that reference this socket
+    for (const [roomName, roomData] of activeRooms.entries()) {
+        if (roomData.users) {
+            // Direct room: check socketId
+            for (const email of Object.keys(roomData.users)) {
+                if (roomData.users[email].socketId === socket.id) {
+                    delete roomData.users[email];
+                }
+            }
+            if (Object.keys(roomData.users).length === 0) {
+                activeRooms.delete(roomName);
+            }
+        }
     }
   });
 });
