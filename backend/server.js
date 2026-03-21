@@ -2,16 +2,115 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import crypto from 'crypto';
 import { ExpressPeerServer } from 'peer';
 import { OAuth2Client } from 'google-auth-library';
 import { dbrun, dbget, dball } from './db.js';
 
-const CLIENT_ID = '184945357599-gsm4f58m1t25gsqp22mh7stl6i6i6va9.apps.googleusercontent.com';
+const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '184945357599-gsm4f58m1t25gsqp22mh7stl6i6i6va9.apps.googleusercontent.com';
 const client = new OAuth2Client(CLIENT_ID);
 
+// --- ALLOWED ORIGINS ---
+const ALLOWED_ORIGINS = [
+    'https://uniconnect.deepanshulathar.dev',
+    'https://lputv.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'capacitor://localhost',  // Android Capacitor
+    'http://localhost',       // Android WebView
+];
+
 const app = express();
-app.use(cors());
-app.use(express.json());
+
+// Security headers
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+
+// CORS — locked to specific origins
+app.use(cors({
+    origin: function(origin, callback) {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true
+}));
+
+// Rate limiting
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 50,                   // 50 requests per window per IP
+    message: { error: 'Too many requests, please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+const loginLimiter = rateLimit({
+    windowMs: 60 * 1000,       // 1 minute
+    max: 5,                    // 5 login attempts per minute per IP
+    message: { error: 'Too many login attempts. Wait a moment.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.use('/api/', apiLimiter);
+app.use('/api/login/', loginLimiter);
+
+app.use(express.json({ limit: '10kb' })); // Limit body size
+
+// --- SESSION TOKEN STORE ---
+const sessionTokens = new Map(); // token -> { email, createdAt }
+const TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+function generateToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+function createSession(email) {
+    // Remove old tokens for this email
+    for (const [tok, data] of sessionTokens.entries()) {
+        if (data.email === email) sessionTokens.delete(tok);
+    }
+    const token = generateToken();
+    sessionTokens.set(token, { email, createdAt: Date.now() });
+    return token;
+}
+
+function validateToken(token) {
+    if (!token) return null;
+    const session = sessionTokens.get(token);
+    if (!session) return null;
+    if (Date.now() - session.createdAt > TOKEN_EXPIRY_MS) {
+        sessionTokens.delete(token);
+        return null;
+    }
+    return session.email;
+}
+
+// Clean expired tokens every hour
+setInterval(() => {
+    const now = Date.now();
+    for (const [tok, data] of sessionTokens.entries()) {
+        if (now - data.createdAt > TOKEN_EXPIRY_MS) sessionTokens.delete(tok);
+    }
+}, 60 * 60 * 1000);
+
+// --- INPUT SANITIZATION ---
+function sanitizeText(text) {
+    if (typeof text !== 'string') return '';
+    return text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .slice(0, 2000); // Max 2000 chars per message
+}
 const server = createServer(app);
 
 // Initialize PeerJS server
@@ -23,9 +122,23 @@ app.use('/peerjs', peerServer);
 
 const io = new Server(server, {
   cors: {
-    origin: "*", // allow frontend
-    methods: ["GET", "POST"]
+    origin: ALLOWED_ORIGINS,
+    methods: ['GET', 'POST'],
+    credentials: true
   }
+});
+
+// Socket authentication middleware
+io.use((socket, next) => {
+    const token = socket.handshake.auth?.token;
+    if (token) {
+        const email = validateToken(token);
+        if (email) {
+            socket.userEmail = email;
+        }
+    }
+    // Allow connection but track auth status
+    next();
 });
 
 let waitingUser = null;
@@ -66,7 +179,7 @@ app.post('/api/login/google', async (req, res) => {
             WHERE f.user_id_1 = ?
         `, [email]);
 
-        res.json({ user, friends });
+        res.json({ user, friends, token: createSession(email) });
     } catch (err) {
         console.error("Google Login Error:", err);
         res.status(401).json({ error: "Invalid Google Token" });
@@ -94,7 +207,7 @@ app.post('/api/login/guest', async (req, res) => {
         const user = await dbget(`SELECT * FROM users WHERE email = ?`, [email]);
         const friends = []; // Brand new guest users won't have friends yet
 
-        res.json({ user, friends });
+        res.json({ user, friends, token: createSession(email) });
     } catch (err) {
         console.error("Guest Login Error:", err);
         res.status(500).json({ error: "Internal Server Error" });
@@ -116,7 +229,7 @@ app.post('/api/login/resume', async (req, res) => {
             WHERE f.user_id_1 = ?
         `, [email]);
 
-        res.json({ user, friends });
+        res.json({ user, friends, token: createSession(email) });
     } catch (err) {
         console.error("Resume Login Error:", err);
         res.status(500).json({ error: "Internal Server Error" });
@@ -245,8 +358,11 @@ io.on('connection', (socket) => {
 
   socket.on('send_message', (data) => {
     const { room, text, from } = data;
-    // Broadcast message to others in the room
-    socket.to(room).emit('receive_message', { text, from, time: new Date() });
+    if (!text || typeof text !== 'string') return;
+    const sanitized = sanitizeText(text.trim());
+    if (!sanitized) return;
+    // Broadcast sanitized message to others in the room
+    socket.to(room).emit('receive_message', { text: sanitized, from, time: new Date() });
   });
 
   socket.on('skip', (data) => {
