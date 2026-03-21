@@ -18,6 +18,14 @@
 | 📱 **Android App** | Capacitor-powered native APK with camera/mic permissions |
 | 🟢 **Online Status** | See which friends are currently online in real-time |
 
+### 🔒 Security
+- **Rate Limiting:** 50 API reqs/15m, 5 logins/min to prevent flooding
+- **CORS Lockdown:** API restricted to verified frontend domains (`*.vercel.app`, `*.deepanshulathar.dev`)
+- **Session Tokens:** Cryptographic tokens (24h expiry) sent via Socket.IO handshake auth
+- **XSS Prevention:** Automatic HTML/script sanitization on all chat messages
+- **Helmet Headers:** HTTP security headers with strict cross-origin policies
+- **Payload Limits:** 2KB max per message, 10KB max JSON body
+
 ---
 
 ## 🏗️ Tech Stack
