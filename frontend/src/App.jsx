@@ -54,9 +54,10 @@ function Noise() {
 }
 
 function Avatar({ name, size = 48 }) {
-  const initials = name?.split("-").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+  const safeName = name || "??";
+  const initials = safeName.split("-").map(w => w?.[0] || "").join("").slice(0, 2).toUpperCase() || "?";
   const colors = ["#ff6b35", "#f7c59f", "#efefd0", "#004e89", "#1a936f", "#c3423f", "#e84855", "#3a86ff"];
-  const color = colors[name?.charCodeAt(name.length - 1) % colors.length] || "#ff6b35";
+  const color = colors[safeName.charCodeAt(safeName.length - 1) % colors.length] || "#ff6b35";
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%",
@@ -248,12 +249,17 @@ function DashboardScreen({ user, friends, onlineUsers, onStartMatch, onStartDire
 
   async function saveBio() {
       setSavingBio(true);
-      await fetch(`${SOCKET_URL}/api/profile/bio`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user.email, bio })
-      });
-      setSavingBio(false);
+      try {
+          await fetch(`${SOCKET_URL}/api/profile/bio`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: user.email, bio })
+          });
+      } catch (err) {
+          console.error("Failed to save bio:", err);
+      } finally {
+          setSavingBio(false);
+      }
   }
 
   return (
@@ -386,7 +392,6 @@ function DashboardScreen({ user, friends, onlineUsers, onStartMatch, onStartDire
 // ─── SCREEN: MATCHING ─────────────────────────────────────────────────────────
 function MatchingScreen({ userEmail, userName, userGender, onMatched, onCancel }) {
   const [dots, setDots] = useState(".");
-  const [queuePos, setQueuePos] = useState(0);
 
   useEffect(() => {
     const d = setInterval(() => setDots(p => p.length >= 3 ? "." : p + "."), 500);
@@ -416,6 +421,7 @@ function MatchingScreen({ userEmail, userName, userGender, onMatched, onCancel }
   }, []);
   
   const handleCancel = () => {
+      socket.emit("cancel_match");
       onCancel();
   }
 
@@ -497,12 +503,21 @@ function DirectMatchingScreen({ userEmail, userName, userGender, friendEmail, fr
   useEffect(() => {
     const d = setInterval(() => setDots(p => p.length >= 3 ? "." : p + "."), 500);
 
-    const safePeerId = socket.id.replace(/[^a-zA-Z0-9]/g, "");
-    
-    // Request to join deterministic direct room
-    socket.emit("join_direct", { 
-        userEmail, userPeerId: safePeerId, userName, userGender, friendEmail 
-    });
+    const startDirect = () => {
+        if (!socket.id) return;
+        const safePeerId = socket.id.replace(/[^a-zA-Z0-9]/g, "");
+        // Request to join deterministic direct room
+        socket.emit("join_direct", { 
+            userEmail, userPeerId: safePeerId, userName, userGender, friendEmail 
+        });
+    };
+
+    // If socket is already connected, start immediately; otherwise wait
+    if (socket.connected && socket.id) {
+        startDirect();
+    } else {
+        socket.on('connect', startDirect);
+    }
     
     socket.on("direct_matched", (data) => {
         onMatched(data.partnerEmail, data.room, data.partnerId, data.partnerName, data.partnerGender, true);
@@ -512,12 +527,12 @@ function DirectMatchingScreen({ userEmail, userName, userGender, friendEmail, fr
         clearInterval(d); 
         socket.off("direct_matched");
         socket.off("direct_waiting");
+        socket.off('connect', startDirect);
     };
   }, []);
   
   const handleCancel = () => {
-      socket.disconnect(); 
-      socket.connect();
+      socket.emit("cancel_match");
       onCancel();
   }
 
@@ -589,6 +604,10 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
   // Auto-scroll
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  // Ref for handleSkip to avoid stale closure in timer
+  const handleSkipRef = useRef(handleSkip);
+  useEffect(() => { handleSkipRef.current = handleSkip; });
+
   // Timer countdown
   useEffect(() => {
     if (isDirect) return; // No timer for friends
@@ -600,7 +619,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
       }
       if (t <= 1) { 
           clearInterval(iv);
-          handleSkip(); 
+          handleSkipRef.current(); 
           return 0; 
       }
       return t - 1;
@@ -838,15 +857,25 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
       };
   }
 
+  const videoClosedRef = useRef(false);
   const closeVideoAndStreams = () => {
+        if (videoClosedRef.current) return; // Guard against double-fire
+        videoClosedRef.current = true;
         setVideoState("idle");
-        if (currentCallRef.current) currentCallRef.current.close();
+        if (currentCallRef.current) {
+            try { currentCallRef.current.close(); } catch(e) {}
+            currentCallRef.current = null;
+            setCurrentCall(null);
+        }
         if (localStreamRef.current) {
             localStreamRef.current.getTracks().forEach(track => track.stop());
+            localStreamRef.current = null;
             setLocalStream(null);
         }
         setRemoteStream(null);
         setMessages(m => [...m, { from: "system", text: "Video call ended.", time: new Date() }]);
+        // Reset guard after a tick so future calls can close
+        setTimeout(() => { videoClosedRef.current = false; }, 100);
   }
 
   function sendMessage() {
@@ -948,7 +977,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
 
   function acceptIncoming() {
     setIncomingVideo(false);
-    setVideoState("requesting");
+    setVideoState("active");
     socket.emit("video_accept", { room });
   }
   
@@ -1026,7 +1055,10 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
      }
   }
 
-  const fmt = (d) => d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const fmt = (d) => {
+      const date = d instanceof Date ? d : new Date(d);
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
   const mins = String(Math.floor(timer / 60)).padStart(2, "0");
   const secs = String(timer % 60).padStart(2, "0");
 
@@ -1070,16 +1102,17 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
 
         {enjoyState !== "mutual" && friendState === "none" && (
             <button onClick={handleEnjoy} disabled={enjoyState === "sent"} style={{
-              background: enjoyState === "sent" ? "rgba(255,107,53,0.3)" : "rgba(255,255,255,0.04)", 
-              border: `1px solid ${enjoyState === "sent" ? "rgba(255,107,53,0.5)" : "rgba(255,255,255,0.08)"}`, 
-              color: enjoyState === "sent" ? "#fff" : "#d8d4cf",
+              background: enjoyState === "received" ? "rgba(255,107,53,0.2)" : enjoyState === "sent" ? "rgba(255,107,53,0.3)" : "rgba(255,255,255,0.04)", 
+              border: `1px solid ${enjoyState === "sent" || enjoyState === "received" ? "rgba(255,107,53,0.5)" : "rgba(255,255,255,0.08)"}`, 
+              color: enjoyState === "sent" || enjoyState === "received" ? "#fff" : "#d8d4cf",
               padding: "6px 12px", borderRadius: 8, cursor: enjoyState === "sent" ? "default" : "pointer", 
-              fontSize: 11, fontWeight: 700, fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em", transition: "all 0.2s"
+              fontSize: 11, fontWeight: 700, fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em", transition: "all 0.2s",
+              animation: enjoyState === "received" ? "blink 1.5s infinite" : "none"
             }}
               onMouseEnter={e => { if (enjoyState !== "sent") { e.target.style.background = "rgba(255,255,255,0.08)"; } }}
               onMouseLeave={e => { if (enjoyState !== "sent") { e.target.style.background = "rgba(255,255,255,0.04)"; } }}
             >
-              {enjoyState === "sent" ? "👍 GLAD YOU'RE ENJOYING!" : "👍 ENJOYING THIS?"}
+              {enjoyState === "received" ? "👍 THEY ENJOY TOO — TAP TO MATCH!" : enjoyState === "sent" ? "👍 GLAD YOU'RE ENJOYING!" : "👍 ENJOYING THIS?"}
             </button>
         )}
 
@@ -1498,6 +1531,17 @@ export default function App() {
     return () => socket.off('online_users');
   }, []);
 
+  // Register user for online presence tracking
+  useEffect(() => {
+    if (!currentUser) return;
+    const emitRegister = () => {
+        socket.emit('register_user', currentUser.email);
+    };
+    if (socket.connected) emitRegister();
+    socket.on('connect', emitRegister);
+    return () => socket.off('connect', emitRegister);
+  }, [currentUser]);
+
   useEffect(() => {
     const cached = localStorage.getItem("uniconnect_user");
     if (cached) {
@@ -1523,7 +1567,7 @@ export default function App() {
             })
             .finally(() => setIsInitializing(false));
         } catch (e) {
-            localStorage.removeItem("lpuconnect_user");
+            localStorage.removeItem("uniconnect_user");
             setIsInitializing(false);
         }
     } else {
