@@ -7,6 +7,9 @@ let SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 if (Capacitor.isNativePlatform()) {
     SOCKET_URL = "https://lpuconnect.onrender.com";
 }
+// Session token for authenticated socket connections
+let sessionToken = localStorage.getItem('uniconnect_token') || null;
+
 const socket = io(SOCKET_URL, {
     reconnection: true,
     reconnectionAttempts: Infinity,
@@ -14,6 +17,7 @@ const socket = io(SOCKET_URL, {
     reconnectionDelayMax: 5000,
     timeout: 20000,
     transports: ['polling', 'websocket'],
+    auth: { token: sessionToken },
 });
 
 // Helper: optimize video bitrate after call connects
@@ -109,6 +113,17 @@ function LandingScreen({ onLogin }) {
         
         if (!res.ok) throw new Error("Failed to authenticate with server");
         const data = await res.json();
+        // Store session token
+        if (data.token) {
+            sessionToken = data.token;
+            localStorage.setItem('uniconnect_token', data.token);
+            socket.auth = { token: data.token };
+            // Reconnect socket with new auth
+            if (socket.connected) {
+                socket.disconnect();
+                socket.connect();
+            }
+        }
         onLogin(data.user, data.friends);
     } catch (err) {
         console.error("Guest login error:", err);
@@ -1555,6 +1570,16 @@ export default function App() {
             .then(res => res.json())
             .then(data => {
                 if (data.user) {
+                   // Update session token
+                   if (data.token) {
+                       sessionToken = data.token;
+                       localStorage.setItem('uniconnect_token', data.token);
+                       socket.auth = { token: data.token };
+                       if (socket.connected) {
+                           socket.disconnect();
+                           socket.connect();
+                       }
+                   }
                    setCurrentUser(data.user);
                    setFriends(data.friends || []);
                    setScreen("dashboard");
@@ -1584,6 +1609,9 @@ export default function App() {
   
   function handleLogout() {
     localStorage.removeItem("uniconnect_user");
+    localStorage.removeItem("uniconnect_token");
+    sessionToken = null;
+    socket.auth = { token: null };
     setCurrentUser(null);
     setFriends([]);
     setScreen("landing");
