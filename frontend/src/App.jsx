@@ -2,6 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { io } from "socket.io-client";
 import Peer from "peerjs";
 import { Capacitor } from "@capacitor/core";
+import {
+    Download, ThumbsUp, UserPlus, Check, X, Flag, SkipForward, LogOut, MessageCircle,
+    Send, Video, VideoOff, Mic, MicOff, PhoneOff, Clock, ArrowRight, LoaderCircle, DoorOpen,
+} from "lucide-react";
 
 let SOCKET_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 if (Capacitor.isNativePlatform()) {
@@ -38,39 +42,30 @@ function optimizeVideoBitrate(peerConnection, maxBitrateKbps) {
     }
 }
 
-const TAGLINES = [
-  "Anonymous. Campus only. One click.",
-  "30,000 strangers. One conversation away.",
-  "The secret social layer for students.",
-  "Skip the small talk. Or don't.",
-];
+const isGuestEmail = (email) => !email || /@uniconnect\.local$/.test(email);
 
-function Noise() {
+function initialsOf(name) {
+  const safeName = name || "??";
+  return safeName.split("-").map(w => w?.[0] || "").join("").slice(0, 2).toUpperCase() || "?";
+}
+
+// A booth print: initials on silver emulsion. `latent` keeps it fogged until identities are revealed.
+function Print({ name, size = 48, latent = false }) {
   return (
-    <svg style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none", opacity: 0.03, zIndex: 0 }}>
-      <filter id="noise">
-        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="4" stitchTiles="stitch" />
-        <feColorMatrix type="saturate" values="0" />
-      </filter>
-      <rect width="100%" height="100%" filter="url(#noise)" />
-    </svg>
+    <div className="print" data-latent={latent} style={{ width: size, height: size }} aria-hidden="true">
+      <div className="print-emulsion" style={{ fontSize: Math.round(size * 0.42) }}>
+        <span>{latent ? "?" : initialsOf(name)}</span>
+      </div>
+    </div>
   );
 }
 
-function Avatar({ name, size = 48 }) {
-  const safeName = name || "??";
-  const initials = safeName.split("-").map(w => w?.[0] || "").join("").slice(0, 2).toUpperCase() || "?";
-  const colors = ["#ff6b35", "#f7c59f", "#efefd0", "#004e89", "#1a936f", "#c3423f", "#e84855", "#3a86ff"];
-  const color = colors[safeName.charCodeAt(safeName.length - 1) % colors.length] || "#ff6b35";
+function Wordmark() {
   return (
-    <div style={{
-      width: size, height: size, borderRadius: "50%",
-      background: color, display: "flex", alignItems: "center", justifyContent: "center",
-      fontFamily: "'Space Mono', monospace", fontSize: size * 0.35, fontWeight: 700,
-      color: "#0a0a0a", flexShrink: 0, border: "2px solid rgba(255,255,255,0.1)"
-    }}>
-      {initials}
-    </div>
+    <span className="wordmark">
+      <span className="lamp" />
+      <span>Uni<em>connect</em></span>
+    </span>
   );
 }
 
@@ -83,82 +78,56 @@ function ServerWakeupUI() {
         return () => clearInterval(iv);
     }, []);
 
+    // The lamp warms from dull to full as the server spins up
+    const warmth = (60 - timeLeft) / 60;
+
     return (
-        <div style={{
-            position: "fixed", inset: 0, zIndex: 9999, background: "rgba(8,8,8,0.95)",
-            backdropFilter: "blur(10px)", display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", fontFamily: "'Space Mono', monospace",
-            color: "#f0ede8", padding: 24, textAlign: "center"
-        }}>
-            <div style={{
-                width: 50, height: 50, borderRadius: "50%", border: "3px solid transparent",
-                borderTopColor: "#ff6b35", borderRightColor: "#ff6b35",
-                animation: "spin 1s linear infinite", marginBottom: 24
-            }} />
-            <style>{`@keyframes spin { 100% { transform: rotate(360deg); } }`}</style>
-            
-            <h2 style={{ color: "#ff6b35", fontSize: 24, margin: "0 0 16px 0", fontWeight: 700 }}>Server Waking Up...</h2>
-            <p style={{ maxWidth: 460, color: "#888", fontSize: 13, lineHeight: 1.6, margin: "0 0 32px 0" }}>
-                UniConnect is a non-profit startup running on a free-tier server. 
-                Because it was asleep, it is currently spinning up. This usually takes about a minute.
-            </p>
-            
-            <div style={{
-                background: "rgba(255,107,53,0.05)", border: "1px solid rgba(255,107,53,0.2)",
-                padding: "20px 40px", borderRadius: 16, display: "flex", flexDirection: "column", gap: 8
-            }}>
-                <div style={{ fontSize: 11, color: "#ff6b35", letterSpacing: "0.1em", fontWeight: 700 }}>ESTIMATED TIME</div>
-                <div style={{ fontSize: 40, fontWeight: 700, color: "#f0ede8", letterSpacing: "0.05em" }}>00:{timeLeft.toString().padStart(2, '0')}</div>
+        <div className="wake waiting" role="alertdialog" aria-live="polite" aria-labelledby="wake-title">
+            <div className="waiting-body">
+                <span className="lamp wake-lamp" style={{
+                    opacity: 0.35 + warmth * 0.65,
+                    boxShadow: `0 0 ${16 + warmth * 48}px ${4 + warmth * 12}px rgba(255,181,71,${0.25 + warmth * 0.45})`
+                }} />
+                <h1 id="wake-title" className="display">Warming up the booth</h1>
+                <p>
+                    UniConnect is a non-profit student project on a free-tier server. It was asleep,
+                    so it's starting up now. This usually takes about a minute.
+                </p>
+                <div className="wake-count tabular" aria-label={`About ${timeLeft} seconds left`}>
+                    0:{timeLeft.toString().padStart(2, "0")}
+                </div>
+                <div className="label" style={{ color: "var(--text-3)" }}>Estimated time</div>
+                <p className="who">Keep this page open. It connects on its own.</p>
             </div>
-            
-            <p style={{ color: "#555", fontSize: 11, marginTop: 40, letterSpacing: "0.05em" }}>
-                PLEASE DON'T RELOAD THE PAGE · IT WILL CONNECT AUTOMATICALLY
-            </p>
         </div>
     );
 }
 
 // ─── SCREEN: LANDING ──────────────────────────────────────────────────────────
 function LandingScreen({ onLogin, onWakeup }) {
-  const [tagIdx, setTagIdx] = useState(0);
-  const [visible, setVisible] = useState(true);
   const [gender, setGender] = useState("");
   const [error, setError] = useState("");
-  const [pulse, setPulse] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const iv = setInterval(() => {
-      setVisible(false);
-      setTimeout(() => { setTagIdx(i => (i + 1) % TAGLINES.length); setVisible(true); }, 400);
-    }, 3000);
-    return () => clearInterval(iv);
-  }, []);
-
-  useEffect(() => {
-    const iv = setInterval(() => setPulse(p => !p), 1200);
-    return () => clearInterval(iv);
-  }, []);
 
   async function handleGuestLogin() {
     if (!gender) {
-      setError("Please select a gender before logging in.");
+      setError("Pick one of the three options first.");
       return;
     }
     setError("");
     setLoading(true);
-    
+
     const wakeTimer = setTimeout(() => {
        if (onWakeup) onWakeup(true);
     }, 3000);
-    
+
     try {
         const res = await fetch(`${SOCKET_URL}/api/login/guest`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ gender })
         });
-        
+
         clearTimeout(wakeTimer);
         if (onWakeup) onWakeup(false);
 
@@ -180,133 +149,136 @@ function LandingScreen({ onLogin, onWakeup }) {
         clearTimeout(wakeTimer);
         if (onWakeup) onWakeup(false);
         console.error("Guest login error:", err);
-        setError("Error connecting to server. Please try again.");
+        setError("Couldn't reach the server. Check your connection and try again.");
         setLoading(false);
     }
   }
 
   return (
-    <div style={{
-      minHeight: "100vh", background: "#080808",
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      fontFamily: "'Space Mono', monospace", padding: "24px", position: "relative", overflow: "hidden"
-    }}>
-      <Noise />
+    <>
+      <main className="landing">
+        <div className="curtain" aria-hidden="true" />
+        <div className="rod" aria-hidden="true" />
 
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 0,
-        backgroundImage: "linear-gradient(rgba(255,107,53,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,107,53,0.04) 1px,transparent 1px)",
-        backgroundSize: "60px 60px"
-      }} />
+        <div className="booth-front">
+          <form className="plate landing-plate" onSubmit={e => { e.preventDefault(); handleGuestLogin(); }}>
+            <span className="lamp lamp-pulse plate-lamp" aria-hidden="true" />
 
-      <div style={{
-        position: "fixed", top: "20%", left: "50%", transform: "translateX(-50%)",
-        width: 600, height: 300, borderRadius: "50%",
-        background: "radial-gradient(ellipse,rgba(255,107,53,0.12) 0%,transparent 70%)",
-        filter: "blur(40px)", zIndex: 0, pointerEvents: "none"
-      }} />
+            <h1 className="display landing-title">
+              Uni<em>connect</em>
+            </h1>
 
-      <div style={{ position: "relative", zIndex: 1, maxWidth: 520, width: "100%", textAlign: "center" }}>
-        
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 8,
-          background: "rgba(255,107,53,0.1)", border: "1px solid rgba(255,107,53,0.3)",
-          borderRadius: 100, padding: "6px 16px", marginBottom: 40,
-          fontSize: 11, color: "#ff6b35", letterSpacing: "0.15em", textTransform: "uppercase"
-        }}>
-          <span style={{
-            width: 6, height: 6, borderRadius: "50%", background: "#ff6b35",
-            boxShadow: pulse ? "0 0 10px #ff6b35" : "none",
-            transition: "box-shadow 0.4s ease"
-          }} />
-          University Network
-        </div>
+            <p className="landing-promise">
+              Talk to a random student for ten minutes. <strong>Nobody sees who you are
+              until you both say yes.</strong>
+            </p>
 
-        <h1 className="landing-title" style={{
-          fontSize: "clamp(52px, 12vw, 88px)", fontWeight: 700,
-          color: "#f0ede8", margin: "0 0 8px 0", letterSpacing: "-0.04em",
-          lineHeight: 1
-        }}>
-          Uni<span style={{ color: "#ff6b35" }}>connect</span>
-        </h1>
+            <fieldset className="gender">
+              <legend className="label">I am</legend>
+              <div className="push-row">
+                {["Male", "Female", "Other"].map(g => (
+                  <label className="push" key={g}>
+                    <input
+                      type="radio"
+                      name="gender"
+                      value={g}
+                      checked={gender === g}
+                      onChange={e => { setGender(e.target.value); setError(""); }}
+                    />
+                    <span>{g}</span>
+                  </label>
+                ))}
+              </div>
+            </fieldset>
 
-        <p style={{
-          fontSize: 14, color: "#666", letterSpacing: "0.05em",
-          height: 24, margin: "0 0 56px 0",
-          opacity: visible ? 1 : 0, transition: "opacity 0.3s ease"
-        }}>
-          {TAGLINES[tagIdx]}
-        </p>
+            {error && <p className="form-error" role="alert">{error}</p>}
 
-        <div style={{
-          display: "flex", justifyContent: "center", gap: 40, marginBottom: 48
-        }}>
-          {[["30k+", "Students"], ["Anonymous", "Always"], ["Campus", "Only"]].map(([v, l]) => (
-            <div key={l} style={{ textAlign: "center" }}>
-              <div style={{ fontSize: 18, fontWeight: 700, color: "#f0ede8" }}>{v}</div>
-              <div style={{ fontSize: 10, color: "#444", letterSpacing: "0.12em", textTransform: "uppercase", marginTop: 2 }}>{l}</div>
-            </div>
-          ))}
-        </div>
-
-        <div style={{ marginBottom: 12 }}>
-          <div className="landing-inputs" style={{ display: "flex", gap: "12px", marginBottom: "16px" }}>
-            <select
-               value={gender}
-               onChange={e => { setGender(e.target.value); setError(""); }}
-               style={{
-                flex: 1, padding: "16px 20px", boxSizing: "border-box",
-                background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
-                borderRadius: 12, color: gender ? "#f0ede8" : "#888", fontSize: 14, outline: "none",
-                fontFamily: "'Space Mono', monospace", appearance: "none",
-                transition: "border-color 0.2s"
-               }}
-               onFocus={e => e.target.style.borderColor = "rgba(255,107,53,0.5)"}
-               onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
-            >
-               <option value="" disabled hidden>Gender</option>
-               <option value="Male" style={{ color: "black" }}>Male</option>
-               <option value="Female" style={{ color: "black" }}>Female</option>
-               <option value="Other" style={{ color: "black" }}>Other</option>
-            </select>
-           </div>
-          {error && <p style={{ color: "#ff6b35", fontSize: 11, marginTop: 8, textAlign: "center" }}>{error}</p>}
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "center", marginTop: "10px" }}>
-            <button 
-                onClick={handleGuestLogin}
-                disabled={loading}
-                style={{
-                    background: "#ff6b35", color: "#000", border: "none",
-                    padding: "16px 24px", borderRadius: 100, fontSize: 14,
-                    fontWeight: 700, fontFamily: "sans-serif", display: "flex",
-                    alignItems: "center", gap: 12, cursor: "pointer", width: 300,
-                    justifyContent: "center", letterSpacing: "0.05em",
-                    opacity: loading ? 0.7 : 1
-                }}
-            >
-                {loading ? "Generating Profile..." : "ENTER ANONYMOUSLY"}
+            <button type="submit" className="btn-go" disabled={loading}>
+              {loading ? <><LoaderCircle className="spin" /> Opening…</> : <>Step in <ArrowRight /></>}
             </button>
+
+            <div className="plate-foot">
+              <span className="label">No sign-up · no names</span>
+              <a href="/uniconnect.apk" download className="label">
+                <Download /> Android app
+              </a>
+            </div>
+          </form>
+
+          <div className="delivery" aria-label="Sample strip showing how a chat unfolds">
+            <div className="slot" aria-hidden="true" />
+            <div className="strip-clip">
+              <div className="strip">
+                <div className="frame">
+                  <span className="frame-no tabular">1</span>
+                  <div className="frame-msg">worst class you're taking this sem?</div>
+                </div>
+                <div className="frame">
+                  <span className="frame-no tabular">2</span>
+                  <div className="frame-msg" data-me="true">stats. 8am. every day.</div>
+                  <div className="frame-msg">no way, same</div>
+                </div>
+                <div className="frame">
+                  <span className="frame-no tabular">3</span>
+                  <div className="frame-event">
+                    <ThumbsUp aria-hidden="true" />
+                    <span className="label">Both enjoyed</span>
+                  </div>
+                </div>
+                <div className="frame">
+                  <span className="frame-no tabular">4</span>
+                  <div className="frame-faces">
+                    <div>AK</div>
+                    <div>RM</div>
+                  </div>
+                </div>
+              </div>
+              <p className="strip-caption label">Sample strip</p>
+            </div>
+          </div>
         </div>
+      </main>
 
-        <p style={{ color: "#333", fontSize: 11, marginTop: 20, letterSpacing: "0.05em" }}>
-          VERIFIED CAMPUS STUDENTS ONLY · ENCRYPTED · SAFE
-        </p>
-
-        <a href="/uniconnect.apk" download style={{
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-            marginTop: 16, padding: "12px 24px", borderRadius: 100,
-            background: "rgba(255,107,53,0.08)", border: "1px solid rgba(255,107,53,0.3)",
-            color: "#ff6b35", fontSize: 12, fontWeight: 700,
-            fontFamily: "'Space Mono', monospace", textDecoration: "none",
-            letterSpacing: "0.05em", width: 300, margin: "16px auto 0",
-            cursor: "pointer", transition: "all 0.2s"
-        }}>
-            📱 DOWNLOAD ANDROID APP
-        </a>
-      </div>
-    </div>
+      <section className="how" aria-labelledby="how-title">
+        <div className="how-inner">
+          <h2 id="how-title" className="display">How the <em>booth</em> works</h2>
+          <ol className="how-steps">
+            <li>
+              <span className="n tabular">1</span>
+              <div>
+                <h3>Step in</h3>
+                <p>You get matched with a random student. You're both anonymous, with no profile and no photo.</p>
+              </div>
+            </li>
+            <li>
+              <span className="n tabular">2</span>
+              <div>
+                <h3>Talk for ten minutes</h3>
+                <p>Text first. Video unlocks after 30 seconds if you both want it. Skip any time.</p>
+              </div>
+            </li>
+            <li>
+              <span className="n tabular">3</span>
+              <div>
+                <h3>Both enjoyed it?</h3>
+                <p>If you both tap "Enjoying this", you can extend the timer or add each other as friends.</p>
+              </div>
+            </li>
+            <li>
+              <span className="n tabular">4</span>
+              <div>
+                <h3>Names develop</h3>
+                <p>Once you both accept the friend request, names are revealed and you can chat any time.</p>
+              </div>
+            </li>
+          </ol>
+          <div className="how-foot">
+            <span>UniConnect is a non-profit student project.</span>
+            <a href="/uniconnect.apk" download>Download the Android app</a>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
 
@@ -314,15 +286,18 @@ function LandingScreen({ onLogin, onWakeup }) {
 function DashboardScreen({ user, friends, onlineUsers, onStartMatch, onStartDirectMatch, onLogout }) {
   const [bio, setBio] = useState(user.bio || "");
   const [savingBio, setSavingBio] = useState(false);
+  const [savedBio, setSavedBio] = useState(false);
 
   async function saveBio() {
       setSavingBio(true);
+      setSavedBio(false);
       try {
           await fetch(`${SOCKET_URL}/api/profile/bio`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email: user.email, bio })
           });
+          setSavedBio(true);
       } catch (err) {
           console.error("Failed to save bio:", err);
       } finally {
@@ -330,140 +305,111 @@ function DashboardScreen({ user, friends, onlineUsers, onStartMatch, onStartDire
       }
   }
 
+  const onlineCount = friends.filter(f => onlineUsers?.includes(f.email)).length;
+
   return (
-    <div className="dashboard-container" style={{
-      minHeight: "100vh", background: "#080808", color: "#f0ede8",
-      fontFamily: "'Space Mono', monospace", padding: "40px 24px", position: "relative",
-    }}>
-      <Noise />
-      <div style={{ maxWidth: 800, margin: "0 auto", position: "relative", zIndex: 1 }}>
-        
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 40 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: "-0.02em" }}>
-            Uni<span style={{ color: "#ff6b35" }}>connect</span> <span style={{color: "#555"}}>// Dashboard</span>
-          </h1>
-          <button onClick={onLogout} style={{
-             background: "transparent", border: "1px solid rgba(255,255,255,0.1)",
-             color: "#888", padding: "8px 16px", borderRadius: 8, cursor: "pointer",
-             fontFamily: "'Space Mono', monospace", fontSize: 12, transition: "color 0.2s"
-          }}
-             onMouseEnter={e => e.target.style.color = "#f0ede8"}
-             onMouseLeave={e => e.target.style.color = "#888"}
-          >
-             Logout
-          </button>
+    <div className="interior">
+      <header className="topbar">
+        <Wordmark />
+        <button className="btn btn-ghost" onClick={onLogout}>
+          <LogOut /> Log out
+        </button>
+      </header>
+
+      <main className="dash">
+        <div className="dash-left">
+          <section aria-label="Your profile">
+            <div className="me">
+              <Print name={user.name} size={96} />
+              <div style={{ minWidth: 0 }}>
+                <h1 className="display me-name">{user.name}</h1>
+                <div className="me-meta label">
+                  <span>{user.gender}</span>
+                  {!isGuestEmail(user.email) && <><span aria-hidden="true">·</span><span style={{ textTransform: "none", letterSpacing: 0 }}>{user.email}</span></>}
+                </div>
+              </div>
+            </div>
+
+            <div className="bio">
+              <label className="field-label label" htmlFor="bio">Short bio</label>
+              <textarea
+                id="bio"
+                value={bio}
+                onChange={e => { setBio(e.target.value); setSavedBio(false); }}
+                onBlur={saveBio}
+                maxLength={280}
+                placeholder="Friends see this once you've unlocked each other."
+              />
+              <div className="bio-status" aria-live="polite">
+                <span>Saves when you click away</span>
+                {savingBio ? <span>Saving…</span> : savedBio ? <span data-state="saved">Saved</span> : null}
+              </div>
+            </div>
+          </section>
+
+          <section className="stepin" aria-labelledby="stepin-title">
+            <div className="plate">
+              <h2 id="stepin-title" className="display">Random chat</h2>
+              <p>Ten minutes with a stranger. Anonymous until you both say yes.</p>
+              <button className="btn-go" onClick={onStartMatch}>
+                Step in <ArrowRight />
+              </button>
+            </div>
+          </section>
         </div>
 
-        <div style={{ display: "flex", gap: 32, flexWrap: "wrap", alignItems: "flex-start" }}>
-          
-          {/* Left Column: Profile */}
-          <div style={{
-            flex: "1 1 300px", background: "rgba(255,255,255,0.02)",
-            border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: 24
-          }}>
-             <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
-                <Avatar name={user.name} size={64} />
-                <div>
-                   <h2 style={{ margin: "0 0 4px 0", fontSize: 20 }}>{user.name}</h2>
-                   <div style={{ color: "#888", fontSize: 13 }}>{user.gender} · {user.email}</div>
-                </div>
-             </div>
-
-             <label style={{ display: "block", fontSize: 11, color: "#666", marginBottom: 8, letterSpacing: "0.05em" }}>SHORT BIO</label>
-             <textarea 
-                value={bio}
-                onChange={e => setBio(e.target.value)}
-                onBlur={saveBio}
-                placeholder="A bit about yourself..."
-                style={{
-                  width: "100%", height: 80, padding: 12, boxSizing: "border-box", resize: "none",
-                  background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 12, color: "#f0ede8", fontSize: 13, fontFamily: "'Space Mono', monospace",
-                  outline: "none"
-                }}
-             />
-             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 11, color: "#555" }}>
-                <span>Changes save automatically on click-away</span>
-                {savingBio && <span style={{color: "#1a936f"}}>Saving...</span>}
-             </div>
-
-             <button onClick={onStartMatch} style={{
-                width: "100%", padding: "16px", background: "#ff6b35", marginTop: 32,
-                border: "none", borderRadius: 12, color: "#0a0a0a",
-                fontSize: 14, fontWeight: 700, fontFamily: "'Space Mono', monospace",
-                cursor: "pointer", letterSpacing: "0.05em"
-             }}>
-                START RANDOM MATCH →
-             </button>
+        <section aria-labelledby="friends-title">
+          <div className="friends-head">
+            <h2 id="friends-title" className="display">Friends</h2>
+            <span className="label tabular">
+              {friends.length === 0 ? "None yet" : `${friends.length} total · ${onlineCount} online`}
+            </span>
           </div>
 
-          {/* Right Column: Friends List */}
-          <div style={{
-            flex: "1 1 300px", background: "rgba(255,255,255,0.02)",
-            border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: 24
-          }}>
-             <h3 style={{ margin: "0 0 20px 0", fontSize: 16, borderBottom: "1px solid rgba(255,255,255,0.1)", paddingBottom: 16 }}>
-               Your Friends ({friends.length})
-             </h3>
-
-             {friends.length === 0 ? (
-                <div style={{ textAlign: "center", padding: "40px 0", color: "#666", fontSize: 13 }}>
-                   <div style={{ fontSize: 32, marginBottom: 12 }}>👻</div>
-                   No friends unlocked yet.<br/>Start matching to meet people!
+          {friends.length === 0 ? (
+             <div className="empty">
+                <div className="empty-frame" aria-hidden="true"><div /></div>
+                <div>
+                  <h3>Your strip is blank</h3>
+                  <p>When you and a stranger both enjoy a chat, you can add each other. Friends show up here and you can message them any time.</p>
                 </div>
-             ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                   {friends.map((friend, idx) => (
-                      <div key={idx} style={{
-                         display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-                         background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 12,
-                         border: "1px solid rgba(255,255,255,0.04)"
-                      }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                            <Avatar name={friend.name} size={40} />
-                            <div>
-                               <div style={{ fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                                  {friend.name} <span style={{fontWeight: 'normal', fontSize: 11, color: "#666"}}>({friend.gender})</span>
-                                  {onlineUsers?.includes(friend.email) && (
-                                     <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#1a936f", boxShadow: "0 0 6px rgba(26,147,111,0.5)" }} title="Online"></span>
-                                  )}
-                               </div>
-                               <div style={{ fontSize: 12, color: "#888", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: 160 }}>
-                                  {friend.bio || "No bio set."}
-                               </div>
+             </div>
+          ) : (
+             <ul className="friend-list">
+                {friends.map((friend, idx) => {
+                   const online = onlineUsers?.includes(friend.email);
+                   return (
+                      <li key={idx} className="friend">
+                         <Print name={friend.name} size={48} />
+                         <div style={{ minWidth: 0 }}>
+                            <div className="friend-name">
+                               <span>{friend.name}</span>
+                               <span className="label" style={{ color: "var(--text-3)" }}>{friend.gender}</span>
+                            </div>
+                            <div className="friend-sub">
+                               <span className="live-dot" data-off={!online} aria-hidden="true" />
+                               <span data-online={online}>{online ? "Online" : "Offline"}</span>
+                               <span aria-hidden="true">·</span>
+                               <span>{friend.bio || "No bio yet"}</span>
                             </div>
                          </div>
-                         <button onClick={() => onStartDirectMatch(friend)} style={{
-                            background: "rgba(255,107,53,0.1)", border: "1px solid rgba(255,107,53,0.3)",
-                            color: "#ff6b35", padding: "8px 12px", borderRadius: 8, cursor: "pointer",
-                            fontFamily: "'Space Mono', monospace", fontSize: 11, fontWeight: 700, flexShrink: 0,
-                            transition: "all 0.2s"
-                         }}
-                            onMouseEnter={e => e.target.style.background = "rgba(255,107,53,0.2)"}
-                            onMouseLeave={e => e.target.style.background = "rgba(255,107,53,0.1)"}
-                         >
-                            Chat 💬
+                         <button className="btn btn-quiet" onClick={() => onStartDirectMatch(friend)} aria-label={`Chat with ${friend.name}`}>
+                            <MessageCircle /> Chat
                          </button>
-                      </div>
-                   ))}
-                </div>
-             )}
-          </div>
-
-        </div>
-      </div>
+                      </li>
+                   );
+                })}
+             </ul>
+          )}
+        </section>
+      </main>
     </div>
   );
 }
 
 // ─── SCREEN: MATCHING ─────────────────────────────────────────────────────────
 function MatchingScreen({ userEmail, userName, userGender, onMatched, onCancel }) {
-  const [dots, setDots] = useState(".");
-
   useEffect(() => {
-    const d = setInterval(() => setDots(p => p.length >= 3 ? "." : p + "."), 500);
-
     const startMatch = () => {
         if (!socket.id) return; // Safety check
         const safePeerId = socket.id.replace(/[^a-zA-Z0-9]/g, "");
@@ -476,107 +422,52 @@ function MatchingScreen({ userEmail, userName, userGender, onMatched, onCancel }
     } else {
         socket.on('connect', startMatch);
     }
-    
+
     socket.on("matched", (data) => {
         onMatched(data.partnerEmail, data.room, data.partnerId, data.partnerName, data.partnerGender);
     });
 
-    return () => { 
-        clearInterval(d); 
+    return () => {
         socket.off("matched");
         socket.off("connect", startMatch);
     };
   }, []);
-  
+
   const handleCancel = () => {
       socket.emit("cancel_match");
       onCancel();
   }
 
   return (
-    <div style={{
-      minHeight: "100vh", background: "#080808", display: "flex",
-      flexDirection: "column", alignItems: "center", justifyContent: "center",
-      fontFamily: "'Space Mono', monospace", position: "relative"
-    }}>
-      <Noise />
-      <div style={{
-        position: "fixed", inset: 0, zIndex: 0,
-        backgroundImage: "linear-gradient(rgba(255,107,53,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,107,53,0.04) 1px,transparent 1px)",
-        backgroundSize: "60px 60px"
-      }} />
+    <div className="interior waiting">
+      <header className="topbar">
+        <Wordmark />
+        <button className="btn btn-quiet" onClick={handleCancel}>
+          <X /> Cancel
+        </button>
+      </header>
 
-      <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-        <div style={{ position: "relative", width: 140, height: 140, margin: "0 auto 40px" }}>
-          {[1, 0.6, 0.3].map((op, i) => (
-            <div key={i} style={{
-              position: "absolute", inset: i * 20,
-              border: `1px solid rgba(255,107,53,${op * 0.4})`,
-              borderRadius: "50%",
-              animation: `ping ${1.5 + i * 0.4}s ease-out infinite`,
-              animationDelay: `${i * 0.3}s`
-            }} />
-          ))}
-          <div style={{
-            position: "absolute", inset: 50,
-            background: "#ff6b35", borderRadius: "50%",
-            boxShadow: "0 0 20px rgba(255,107,53,0.6)"
-          }} />
+      <main className="waiting-body" aria-live="polite">
+        <div className="ready-lamps" aria-hidden="true">
+          <span className="lamp" /><span className="lamp" /><span className="lamp" />
         </div>
-
-        <style>{`
-          @keyframes ping {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(1.4); opacity: 0; }
-          }
-        `}</style>
-
-        <h2 style={{ color: "#f0ede8", fontSize: 22, margin: "0 0 8px", fontWeight: 700 }}>
-          Finding a match{dots}
-        </h2>
-        <p style={{ color: "#555", fontSize: 12, margin: "0 0 32px", letterSpacing: "0.08em" }}>
-          Waiting for another student to join...
-        </p>
-
-        <div style={{
-          background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)",
-          borderRadius: 12, padding: "12px 24px", display: "inline-block", marginBottom: 32
-        }}>
-          <span style={{ color: "#444", fontSize: 11, letterSpacing: "0.1em" }}>LOGGED IN AS </span>
-          <span style={{ color: "#ff6b35", fontSize: 11 }}>{userName} ({userEmail})</span>
-        </div>
-
-        <div>
-          <button onClick={handleCancel} style={{
-            background: "transparent", border: "1px solid rgba(255,255,255,0.1)",
-            color: "#555", padding: "12px 28px", borderRadius: 8, cursor: "pointer",
-            fontFamily: "'Space Mono', monospace", fontSize: 12, letterSpacing: "0.08em",
-            transition: "color 0.2s, border-color 0.2s"
-          }}
-            onMouseEnter={e => { e.target.style.color = "#f0ede8"; e.target.style.borderColor = "rgba(255,255,255,0.3)"; }}
-            onMouseLeave={e => { e.target.style.color = "#555"; e.target.style.borderColor = "rgba(255,255,255,0.1)"; }}
-          >
-            CANCEL
-          </button>
-        </div>
-      </div>
+        <h1 className="display">Finding someone</h1>
+        <p>Waiting for another student to step in. Keep this screen open.</p>
+        <p className="who label">You're in as <strong>{userName}</strong></p>
+      </main>
     </div>
   );
 }
 
 // ─── SCREEN: DIRECT MATCHING ──────────────────────────────────────────────────
 function DirectMatchingScreen({ userEmail, userName, userGender, friendEmail, friendName, onMatched, onCancel }) {
-  const [dots, setDots] = useState(".");
-
   useEffect(() => {
-    const d = setInterval(() => setDots(p => p.length >= 3 ? "." : p + "."), 500);
-
     const startDirect = () => {
         if (!socket.id) return;
         const safePeerId = socket.id.replace(/[^a-zA-Z0-9]/g, "");
         // Request to join deterministic direct room
-        socket.emit("join_direct", { 
-            userEmail, userPeerId: safePeerId, userName, userGender, friendEmail 
+        socket.emit("join_direct", {
+            userEmail, userPeerId: safePeerId, userName, userGender, friendEmail
         });
     };
 
@@ -586,48 +477,41 @@ function DirectMatchingScreen({ userEmail, userName, userGender, friendEmail, fr
     } else {
         socket.on('connect', startDirect);
     }
-    
+
     socket.on("direct_matched", (data) => {
         onMatched(data.partnerEmail, data.room, data.partnerId, data.partnerName, data.partnerGender, true);
     });
 
-    return () => { 
-        clearInterval(d); 
+    return () => {
         socket.off("direct_matched");
         socket.off("direct_waiting");
         socket.off('connect', startDirect);
     };
   }, []);
-  
+
   const handleCancel = () => {
       socket.emit("cancel_match");
       onCancel();
   }
 
   return (
-    <div style={{
-      minHeight: "100vh", background: "#080808", display: "flex",
-      flexDirection: "column", alignItems: "center", justifyContent: "center",
-      fontFamily: "'Space Mono', monospace", position: "relative"
-    }}>
-      <Noise />
-      <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-        
-        <div style={{ display: "flex", gap: 16, alignItems: "center", justifyContent: "center", marginBottom: 32 }}>
-           <Avatar name={userName} size={64} />
-           <div style={{ color: "#666", fontSize: 24 }}>→</div>
-           <Avatar name={friendName} size={64} />
-        </div>
+    <div className="interior waiting">
+      <header className="topbar">
+        <Wordmark />
+        <button className="btn btn-quiet" onClick={handleCancel}>
+          <X /> Cancel
+        </button>
+      </header>
 
-        <h2 style={{ fontSize: 20, color: "#f0ede8", margin: "0 0 12px" }}>Calling {friendName}{dots}</h2>
-        <p style={{ color: "#666", fontSize: 13, marginBottom: 32, letterSpacing: "0.05em" }}>
-          Waiting for them to connect...
-        </p>
-        <button onClick={handleCancel} style={{
-          background: "transparent", border: "1px solid rgba(255,255,255,0.1)", color: "#555",
-          padding: "10px 24px", borderRadius: 8, cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: 12
-        }}>Cancel</button>
-      </div>
+      <main className="waiting-body" aria-live="polite">
+        <div className="calling-prints" aria-hidden="true">
+           <Print name={userName} size={80} />
+           <div className="calling-line"><i /><i /><i /></div>
+           <Print name={friendName} size={80} />
+        </div>
+        <h1 className="display">Calling {friendName}</h1>
+        <p>They'll join when they open the chat from their friends list.</p>
+      </main>
     </div>
   );
 }
@@ -635,7 +519,7 @@ function DirectMatchingScreen({ userEmail, userName, userGender, friendEmail, fr
 // ─── SCREEN: CHAT ─────────────────────────────────────────────────────────────
 function ChatScreen({ userEmail, userName, userGender, partner, partnerName, partnerGender, room, partnerId, isDirect, onSkip, onEnd }) {
   const [messages, setMessages] = useState([
-    { from: "system", text: isDirect ? `Direct connected with ${partnerName}.` : `Connected with an anonymous student. Say hello!`, time: new Date() }
+    { from: "system", text: isDirect ? `Connected with ${partnerName}.` : `You are in the booth with an anonymous student. Say hi.`, time: new Date() }
   ]);
   const [input, setInput] = useState("");
   const [videoState, setVideoState] = useState("idle"); // idle | requesting | active | rejected
@@ -668,6 +552,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
   useEffect(() => { currentCallRef.current = currentCall; }, [currentCall]);
 
   const DisplayPartnerName = friendState === "friends" ? partnerName : "Student";
+  const pushSystem = (text) => setMessages(m => [...m, { from: "system", text, time: new Date() }]);
 
   // Auto-scroll
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
@@ -858,7 +743,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
       newPeer.on("call", (call) => {
           console.log("[WebRTC] Received incoming call from:", call.peer);
           if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-              alert("Your browser does not support video calls.");
+              pushSystem("Your browser does not support video calls.");
               return;
           }
           const getMediaStream = () => {
@@ -915,7 +800,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
               });
           }).catch((err) => {
               console.error("Failed to get any media stream", err);
-              alert("Could not access microphone or camera. Please check your permissions in browser settings.");
+              pushSystem("Could not access microphone or camera. Please check your permissions in browser settings.");
               setVideoState("idle");
           });
       });
@@ -974,13 +859,13 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
 
   function startPeerCall() {
      if (!peerRef.current) {
-         alert("Call server is still connecting. Please try again in a few seconds.");
+         pushSystem("Call server is still connecting. Please try again in a few seconds.");
          setVideoState("idle");
          return;
      }
 
      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-         alert("Your browser does not support video calls.");
+         pushSystem("Your browser does not support video calls.");
          setVideoState("idle");
          return;
      }
@@ -1038,7 +923,7 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         });
      }).catch(err => {
          console.error("Error accessing media devices", err);
-         alert("Could not access microphone or camera. Please check your permissions in browser settings.");
+         pushSystem("Could not access microphone or camera. Please check your permissions in browser settings.");
          setVideoState("idle");
      });
   }
@@ -1130,158 +1015,115 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
   const mins = String(Math.floor(timer / 60)).padStart(2, "0");
   const secs = String(timer % 60).padStart(2, "0");
 
+  const isFriends = friendState === "friends";
+  const lowTime = timer < 60;
+
+  // What the consent rail says, and whose move it is
+  let railCopy = null;
+  let railButtons = null;
+  let railAttention = false;
+  if (friendState === "received") {
+      railAttention = true;
+      railCopy = <><strong>They want to add you.</strong> Accepting reveals both names.</>;
+      railButtons = (
+          <>
+              <button className="btn btn-quiet" onClick={rejectFriendRequest}>Decline</button>
+              <button className="btn btn-lamp" onClick={acceptFriendRequest}><Check /> Accept</button>
+          </>
+      );
+  } else if (friendState === "sent") {
+      railCopy = <>Friend request sent. <strong>Waiting on them.</strong></>;
+  } else if (enjoyState === "mutual") {
+      railCopy = <><strong>You both enjoyed this.</strong> Add each other to reveal names.</>;
+      railButtons = <button className="btn btn-red" onClick={sendFriendRequest}><UserPlus /> Add friend</button>;
+  } else if (enjoyState === "received") {
+      railAttention = true;
+      railCopy = <><strong>They're enjoying this.</strong> Tap if you are too.</>;
+      railButtons = <button className="btn btn-lamp" onClick={handleEnjoy}><ThumbsUp /> Me too</button>;
+  } else if (enjoyState === "sent") {
+      railCopy = <>Noted. <strong>If they tap too,</strong> you can add each other.</>;
+      railButtons = <button className="btn btn-quiet" disabled><Check /> Enjoying</button>;
+  } else {
+      railCopy = <>Enjoying this? If you both tap, you can add each other.</>;
+      railButtons = <button className="btn btn-quiet" onClick={handleEnjoy}><ThumbsUp /> Enjoying this</button>;
+  }
+
+  const enjoyStep = (enjoyState === "mutual" || isFriends) ? "done" : (enjoyState === "sent" || enjoyState === "received") ? "half" : "todo";
+  const friendStep = isFriends ? "done" : (friendState === "sent" || friendState === "received") ? "half" : "todo";
+
   return (
-    <div className="chat-container" style={{
-      height: "100dvh", background: "#080808", display: "flex", flexDirection: "column",
-      fontFamily: "'Space Mono', monospace", maxWidth: 680, margin: "0 auto",
-      position: "relative", overflow: "hidden"
-    }}>
-      <Noise />
-      <style>{`
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes blink { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
-      `}</style>
-
-
-      <div className="chat-header" style={{
-        padding: "16px 20px", borderBottom: "1px solid rgba(255,255,255,0.06)",
-        display: "flex", alignItems: "center", background: "rgba(8,8,8,0.95)",
-        backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10
-      }}>
-        
-        <div className="chat-header-info" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <Avatar name={DisplayPartnerName} size={40} />
-            <div style={{ flex: 1, textAlign: "left" }}>
-            <div style={{ color: "#f0ede8", fontSize: 14, fontWeight: 700 }}>
-                {DisplayPartnerName} 
-                {friendState === "friends" && <span style={{fontSize: 11, color: "#888", marginLeft: 8, fontWeight: 'normal'}}>({partnerGender})</span>}
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1a936f", display: "inline-block" }} />
-                <span style={{ color: "#1a936f", fontSize: 10, letterSpacing: "0.08em" }}>ONLINE · VERIFIED</span>
-            </div>
+    <div className="chat">
+      <header className="chat-head">
+        <div className="chat-who">
+            <Print name={partnerName} size={44} latent={!isFriends} />
+            <div style={{ minWidth: 0 }}>
+              <div className="chat-who-name">
+                  {DisplayPartnerName}
+                  {isFriends && partnerGender && <span className="label" style={{ color: "var(--text-3)", marginLeft: 8 }}>{partnerGender}</span>}
+              </div>
+              <div className="chat-who-sub">
+                  <span className="live-dot" aria-hidden="true" />
+                  <span>{isDirect ? "Online · no time limit" : isFriends ? "Online · friends" : "Online · anonymous"}</span>
+              </div>
             </div>
         </div>
 
-        <div className="chat-header-actions" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-
-        {enjoyState !== "mutual" && friendState === "none" && (
-            <button onClick={handleEnjoy} disabled={enjoyState === "sent"} style={{
-              background: enjoyState === "received" ? "rgba(255,107,53,0.2)" : enjoyState === "sent" ? "rgba(255,107,53,0.3)" : "rgba(255,255,255,0.04)", 
-              border: `1px solid ${enjoyState === "sent" || enjoyState === "received" ? "rgba(255,107,53,0.5)" : "rgba(255,255,255,0.08)"}`, 
-              color: enjoyState === "sent" || enjoyState === "received" ? "#fff" : "#d8d4cf",
-              padding: "6px 12px", borderRadius: 8, cursor: enjoyState === "sent" ? "default" : "pointer", 
-              fontSize: 11, fontWeight: 700, fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em", transition: "all 0.2s",
-              animation: enjoyState === "received" ? "blink 1.5s infinite" : "none"
-            }}
-              onMouseEnter={e => { if (enjoyState !== "sent") { e.target.style.background = "rgba(255,255,255,0.08)"; } }}
-              onMouseLeave={e => { if (enjoyState !== "sent") { e.target.style.background = "rgba(255,255,255,0.04)"; } }}
-            >
-              {enjoyState === "received" ? "👍 THEY ENJOY TOO — TAP TO MATCH!" : enjoyState === "sent" ? "👍 GLAD YOU'RE ENJOYING!" : "👍 ENJOYING THIS?"}
-            </button>
-        )}
-
-        {enjoyState === "mutual" && friendState === "none" && (
-            <button onClick={sendFriendRequest} style={{
-              background: "rgba(255,107,53,0.1)", border: "1px solid rgba(255,107,53,0.3)", color: "#ff6b35",
-              padding: "6px 12px", borderRadius: 8, cursor: "pointer", fontSize: 11, fontWeight: 700,
-              fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em", transition: "all 0.2s"
-            }}
-              onMouseEnter={e => { e.target.style.background = "rgba(255,107,53,0.2)"; }}
-              onMouseLeave={e => { e.target.style.background = "rgba(255,107,53,0.1)"; }}
-            >
-              + ADD FRIEND
-            </button>
-        )}
-        {friendState === "sent" && (
-            <div style={{
-              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: "#888",
-              padding: "6px 12px", borderRadius: 8, fontSize: 11, fontWeight: 700,
-              fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em"
-            }}>
-              REQUEST SENT
+        <div className="chat-actions">
+          {!isDirect && (
+            <div className="timer tabular" data-low={lowTime} role="timer" aria-label={`${mins} minutes ${secs} seconds left`}>
+              <b>{mins}:{secs}</b>
+              <span>left</span>
             </div>
-        )}
+          )}
 
-        {!isDirect && (
-          <div className="timer-badge" style={{
-            background: timer < 60 ? "rgba(200,50,50,0.15)" : "rgba(255,255,255,0.05)",
-            border: `1px solid ${timer < 60 ? "rgba(200,50,50,0.4)" : "rgba(255,255,255,0.08)"}`,
-            borderRadius: 8, padding: "6px 12px", fontSize: 13, fontWeight: 700,
-            color: timer < 60 ? "#c43232" : "#555", letterSpacing: "0.05em"
-          }}>
-            {mins}:{secs}
+          <button className="btn btn-ghost btn-icon" onClick={() => setShowReport(true)} aria-label="Report this person" title="Report">
+            <Flag />
+          </button>
+
+          <button className="btn btn-quiet" onClick={handleSkip}>
+            {isDirect ? <><DoorOpen /><span className="skip-label">Leave</span></> : <><SkipForward /><span className="skip-label">Skip</span></>}
+          </button>
+        </div>
+      </header>
+
+      {!isDirect && isFriends && (
+        <div className="rail" data-compact="true" aria-live="polite">
+          <p className="rail-copy label"><Check aria-hidden="true" /> Friends now · names revealed</p>
+        </div>
+      )}
+      {!isDirect && !isFriends && (
+        <div className="rail" data-attention={railAttention} aria-live="polite">
+          <ol className="rail-steps" aria-label="Unlock progress">
+            <li data-state={enjoyStep}>Both enjoy</li>
+            <li data-state={friendStep}>Names revealed</li>
+          </ol>
+          <div className="rail-row">
+            <p className="rail-copy">{railCopy}</p>
+            {railButtons && <div className="rail-btns">{railButtons}</div>}
           </div>
-        )}
-
-        <button onClick={() => setShowReport(true)} style={{
-          background: "transparent", border: "none", color: "#333", cursor: "pointer",
-          fontSize: 18, padding: "4px 8px", transition: "color 0.2s"
-        }}
-          onMouseEnter={e => e.target.style.color = "#c43232"}
-          onMouseLeave={e => e.target.style.color = "#333"}
-          title="Report"
-        >⚑</button>
-
-        <button className="skip-btn" onClick={handleSkip} style={{
-          background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-          color: "#666", padding: "8px 16px", borderRadius: 8, cursor: "pointer",
-          fontFamily: "'Space Mono', monospace", fontSize: 11, letterSpacing: "0.08em",
-          transition: "all 0.2s"
-        }}
-          onMouseEnter={e => { e.target.style.background = "rgba(255,107,53,0.1)"; e.target.style.color = "#ff6b35"; e.target.style.borderColor = "rgba(255,107,53,0.3)"; }}
-          onMouseLeave={e => { e.target.style.background = "rgba(255,255,255,0.04)"; e.target.style.color = "#666"; e.target.style.borderColor = "rgba(255,255,255,0.08)"; }}
-        >
-          {isDirect ? "EXIT ✕" : "SKIP →"}
-        </button>
         </div>
-      </div>
+      )}
 
       {videoState === "active" && (
-        <div className="video-container" style={{
-          background: "#0f0f0f", borderBottom: "1px solid rgba(255,255,255,0.06)",
-          padding: 16, display: "flex", gap: 12, animation: "fadeUp 0.3s ease"
-        }}>
-          <div className="video-main" style={{
-            flex: 1, aspectRatio: "16/9", background: "linear-gradient(135deg,#1a1a1a,#0f0f0f)",
-            borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
-            border: "1px solid rgba(255,255,255,0.06)", position: "relative", overflow: "hidden"
-          }}>
-             <video 
-                autoPlay 
-                playsInline 
+        <div className="video">
+          <div className="video-main">
+             <video
+                autoPlay
+                playsInline
                 ref={el => {
                    if (el && remoteStream && el.srcObject !== remoteStream) {
                       el.srcObject = remoteStream;
                    }
                    remoteVideoRef.current = el;
                 }}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
              />
-            <div style={{
-              position: "absolute", bottom: 10, left: 12, fontSize: 10,
-              color: "#fff", letterSpacing: "0.08em", textShadow: "0 1px 2px rgba(0,0,0,0.8)",
-              zIndex: 2
-            }}>{DisplayPartnerName}</div>
-             <div style={{
-              position: "absolute", top: 10, right: 12, width: 8, height: 8,
-              borderRadius: "50%", background: "#ff4444",
-              boxShadow: "0 0 8px rgba(255,68,68,0.6)",
-              animation: "blink 1.5s infinite",
-              zIndex: 2
-            }} />
+             <span className="video-tag label">{DisplayPartnerName}</span>
+             <span className="lamp lamp-pulse video-rec" aria-hidden="true" />
           </div>
-          <div className="video-pip" style={{
-            width: 120, aspectRatio: "9/16", background: "linear-gradient(135deg,#1e1e1e,#0f0f0f)",
-            borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center",
-            border: "1px solid rgba(255,255,255,0.06)", position: "relative", overflow: "hidden", flexShrink: 0
-          }}>
-             <video 
-                autoPlay 
-                playsInline 
+          <div className="video-pip">
+             <video
+                autoPlay
+                playsInline
                 muted
                 ref={el => {
                    if (el && localStream && el.srcObject !== localStream) {
@@ -1289,158 +1131,62 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
                    }
                    localVideoRef.current = el;
                 }}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
              />
-            <div style={{ position: "absolute", bottom: 8, left: 8, fontSize: 9, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.8)", zIndex: 2 }}>You</div>
+             <span className="video-tag label">You</span>
           </div>
         </div>
       )}
       {videoState === "active" && (
-        <div className="video-controls" style={{ padding: "8px 16px", display: "flex", gap: 8, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <button className="video-control-btn" onClick={toggleMute} style={{
-              background: isMuted ? "rgba(196,50,50,0.15)" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${isMuted ? "rgba(196,50,50,0.3)" : "rgba(255,255,255,0.08)"}`,
-              color: isMuted ? "#c43232" : "#666",
-              padding: "8px 14px", borderRadius: 8, cursor: "pointer",
-              fontFamily: "'Space Mono', monospace", fontSize: 11,
-              display: "flex", alignItems: "center", gap: 6, justifyContent: "center"
-          }}>
-              🎤 {isMuted ? "Unmute" : "Mute"}
+        <div className="video-controls">
+          <button className="btn btn-quiet" onClick={toggleMute} aria-pressed={isMuted}>
+              {isMuted ? <><MicOff /> Unmute</> : <><Mic /> Mute</>}
           </button>
-          <button className="video-control-btn" onClick={toggleVideo} style={{
-              background: isCameraOff ? "rgba(196,50,50,0.15)" : "rgba(255,255,255,0.04)",
-              border: `1px solid ${isCameraOff ? "rgba(196,50,50,0.3)" : "rgba(255,255,255,0.08)"}`,
-              color: isCameraOff ? "#c43232" : "#666",
-              padding: "8px 14px", borderRadius: 8, cursor: "pointer",
-              fontFamily: "'Space Mono', monospace", fontSize: 11,
-              display: "flex", alignItems: "center", gap: 6, justifyContent: "center"
-          }}>
-              📷 {isCameraOff ? "Turn On" : "Camera"}
+          <button className="btn btn-quiet" onClick={toggleVideo} aria-pressed={isCameraOff}>
+              {isCameraOff ? <><VideoOff /> Camera on</> : <><Video /> Camera off</>}
           </button>
-          <button className="video-control-btn" onClick={endVideo} style={{
-              background: "rgba(196,50,50,0.15)",
-              border: "1px solid rgba(196,50,50,0.3)",
-              color: "#c43232",
-              padding: "8px 14px", borderRadius: 8, cursor: "pointer",
-              fontFamily: "'Space Mono', monospace", fontSize: 11,
-              display: "flex", alignItems: "center", gap: 6, justifyContent: "center"
-          }}>
-              📞 End Call
+          <button className="btn btn-danger" onClick={endVideo}>
+              <PhoneOff /> End
           </button>
         </div>
       )}
 
       {/* Messages */}
-      <div className="chat-messages" style={{
-        flex: 1, overflowY: "auto", padding: "20px 16px",
-        display: "flex", flexDirection: "column", gap: 12,
-        minHeight: 0
-      }}>
+      <div className="messages" role="log" aria-live="polite">
         {messages.map((msg, i) => (
-          <div key={i} style={{
-            display: "flex",
-            flexDirection: msg.from === "me" ? "row-reverse" : "row",
-            alignItems: "flex-end", gap: 8,
-            animation: "fadeUp 0.25s ease"
-          }}>
-            {msg.from !== "me" && msg.from !== "system" && <Avatar name={DisplayPartnerName} size={28} />}
-            <div style={{
-              maxWidth: "72%",
-              background: msg.from === "system"
-                ? "transparent"
-                : msg.from === "me"
-                  ? "#ff6b35"
-                  : "rgba(255,255,255,0.06)",
-              border: msg.from === "system" ? "none" : `1px solid ${msg.from === "me" ? "transparent" : "rgba(255,255,255,0.08)"}`,
-              borderRadius: msg.from === "me" ? "18px 18px 4px 18px" : msg.from === "system" ? 0 : "18px 18px 18px 4px",
-              padding: msg.from === "system" ? "4px 0" : "10px 14px",
-              color: msg.from === "system" ? "#333" : msg.from === "me" ? "#0a0a0a" : "#d8d4cf",
-              fontSize: msg.from === "system" ? 10 : 13,
-              lineHeight: 1.5,
-              textAlign: msg.from === "system" ? "center" : "left",
-              letterSpacing: msg.from === "system" ? "0.08em" : "0",
-              width: msg.from === "system" ? "100%" : "auto",
-              fontStyle: msg.from === "system" ? "italic" : "normal"
-            }}>
-              {msg.text}
-              {msg.from !== "system" && (
-                <div style={{ fontSize: 9, color: msg.from === "me" ? "rgba(0,0,0,0.4)" : "#333", marginTop: 4, textAlign: msg.from === "me" ? "right" : "left" }}>
-                  {fmt(msg.time)}
-                </div>
-              )}
+          msg.from === "system" ? (
+            <div key={i} className="sys"><span>{msg.text}</span></div>
+          ) : (
+            <div key={i} className="msg" data-from={msg.from}>
+              <div className="bubble">
+                {msg.text}
+                <time>{fmt(msg.time)}</time>
+              </div>
             </div>
-          </div>
+          )
         ))}
 
         {!isDirect && showExtendBanner && (
-            <div style={{
-              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 12, padding: "12px 16px", marginTop: 8,
-              display: "flex", flexDirection: "column", gap: 10,
-              animation: "fadeUp 0.3s ease"
-            }}>
-              <div style={{ color: "#d8d4cf", fontSize: 12 }}>
-                Conversation ending soon — want to keep going?
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
+            <div className="notice">
+              <p>
+                {extendState === "received"
+                  ? <>They want <strong>ten more minutes</strong>. You in?</>
+                  : extendState === "sent"
+                    ? "Asked for more time. Waiting on them."
+                    : "Ten minutes go fast. Want more time?"}
+              </p>
+              <div className="notice-btns">
                 {extendState === "none" && (
-                    <button onClick={requestExtendTimer} style={{
-                      flex: 1, padding: "8px", background: "rgba(255,107,53,0.1)", color: "#ff6b35",
-                      fontWeight: 700, borderRadius: 8, border: "1px solid rgba(255,107,53,0.3)", cursor: "pointer",
-                      fontFamily: "'Space Mono', monospace", fontSize: 11
-                    }}>EXTEND TIMER</button>
-                )}
-                {extendState === "sent" && (
-                    <div style={{
-                      flex: 1, padding: "8px", background: "rgba(255,255,255,0.02)", color: "#888",
-                      fontWeight: 700, borderRadius: 8, border: "1px solid rgba(255,255,255,0.05)",
-                      fontFamily: "'Space Mono', monospace", fontSize: 11, textAlign: "center"
-                    }}>WAITING FOR PARTNER...</div>
+                    <button className="btn btn-lamp" onClick={requestExtendTimer}><Clock /> Ask for 10 more min</button>
                 )}
                 {extendState === "received" && (
                     <>
-                        <button onClick={acceptExtendTimer} style={{
-                          flex: 1, padding: "8px", background: "#ff6b35", color: "#0a0a0a",
-                          fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer",
-                          fontFamily: "'Space Mono', monospace", fontSize: 11
-                        }}>ACCEPT EXTENSION</button>
-                        <button onClick={rejectExtendTimer} style={{
-                          flex: 1, padding: "8px", background: "rgba(255,255,255,0.05)", color: "#888",
-                          fontWeight: 700, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer",
-                          fontFamily: "'Space Mono', monospace", fontSize: 11
-                        }}>DECLINE</button>
+                        <button className="btn btn-lamp" onClick={acceptExtendTimer}><Check /> Extend</button>
+                        <button className="btn btn-quiet" onClick={rejectExtendTimer}>No thanks</button>
                     </>
                 )}
-                <button onClick={() => setShowExtendBanner(false)} style={{
-                  padding: "8px 12px", background: "transparent", color: "#666",
-                  fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer",
-                  fontFamily: "'Space Mono', monospace", fontSize: 11
-                }}>DISMISS</button>
-              </div>
-            </div>
-        )}
-
-        {friendState === "received" && (
-            <div style={{
-              background: "rgba(255,107,53,0.1)", border: "1px solid rgba(255,107,53,0.3)",
-              borderRadius: 12, padding: "16px", marginTop: 8,
-              display: "flex", flexDirection: "column", gap: 12,
-              animation: "fadeUp 0.3s ease"
-            }}>
-              <div style={{ color: "#f0ede8", fontSize: 13, fontWeight: 700 }}>
-                {DisplayPartnerName} wants to be friends and reveal identities.
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={acceptFriendRequest} style={{
-                  flex: 1, padding: "8px", background: "#ff6b35", color: "#0a0a0a",
-                  fontWeight: 700, borderRadius: 8, border: "none", cursor: "pointer",
-                  fontFamily: "'Space Mono', monospace", fontSize: 11
-                }}>ACCEPT</button>
-                <button onClick={rejectFriendRequest} style={{
-                  flex: 1, padding: "8px", background: "rgba(255,255,255,0.05)", color: "#888",
-                  fontWeight: 700, borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)", cursor: "pointer",
-                  fontFamily: "'Space Mono', monospace", fontSize: 11
-                }}>DECLINE</button>
+                {extendState !== "received" && (
+                    <button className="btn btn-ghost" onClick={() => setShowExtendBanner(false)}>Dismiss</button>
+                )}
               </div>
             </div>
         )}
@@ -1448,128 +1194,71 @@ function ChatScreen({ userEmail, userName, userGender, partner, partnerName, par
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="chat-input-wrapper" style={{
-        padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.06)",
-        background: "rgba(8,8,8,0.95)", backdropFilter: "blur(12px)",
-        display: "flex", gap: 8, alignItems: "center", minWidth: 0
-      }}>
+      <form className="composer" onSubmit={e => { e.preventDefault(); sendMessage(); }}>
+        <label htmlFor="msg" className="sr-only">Message</label>
         <input
-          className="chat-input-field"
+          id="msg"
           value={input}
           onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && sendMessage()}
-          placeholder="Type a message..."
-          style={{
-            flex: 1, padding: "12px 16px", minWidth: 0,
-            background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 12, color: "#f0ede8", fontSize: 13, outline: "none",
-            fontFamily: "'Space Mono', monospace", width: "100%"
-          }}
-          onFocus={e => e.target.style.borderColor = "rgba(255,107,53,0.4)"}
-          onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.08)"}
+          placeholder="Type a message…"
+          autoComplete="off"
+          maxLength={2000}
         />
-        <button className="chat-send-btn" onClick={sendMessage} style={{
-          background: "#ff6b35", border: "none", borderRadius: 10, width: 44, height: 44,
-          color: "#0a0a0a", fontSize: 18, cursor: "pointer", display: "flex",
-          alignItems: "center", justifyContent: "center", flexShrink: 0,
-          transition: "opacity 0.2s"
-        }}>↑</button>
+        <button type="submit" className="btn btn-red btn-icon" aria-label="Send" disabled={!input.trim()}>
+          <Send />
+        </button>
 
         {videoState === "idle" && (
           (!isDirect && friendState !== "friends" && timer > 570) ? (
-            <div style={{
-              padding: "0 12px", height: 44, color: "#888", fontSize: 11,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
-              borderRadius: 10, fontFamily: "'Space Mono', monospace", letterSpacing: "0.05em",
-              flexShrink: 0, whiteSpace: "nowrap"
-            }}>
-              VIDEO IN {timer - 570}s
-            </div>
+            <span className="video-wait" title="Video unlocks 30 seconds in">
+              <Video aria-hidden="true" /> {timer - 570}s
+            </span>
           ) : (
-            <button onClick={requestVideo} style={{
-              background: "rgba(26,147,111,0.15)", border: "1px solid rgba(26,147,111,0.3)",
-              borderRadius: 10, width: 44, height: 44, color: "#1a936f", fontSize: 18,
-              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-              flexShrink: 0, transition: "all 0.2s"
-            }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(26,147,111,0.25)"}
-              onMouseLeave={e => e.currentTarget.style.background = "rgba(26,147,111,0.15)"}
-              title="Start Video Call"
-            >📹</button>
+            <button type="button" className="btn btn-quiet btn-icon" onClick={requestVideo} aria-label="Start video call" title="Start video call">
+              <Video />
+            </button>
           )
         )}
-      </div>
+        {videoState === "requesting" && (
+          <span className="video-wait"><LoaderCircle className="spin" aria-hidden="true" /> Calling</span>
+        )}
+      </form>
 
       {incomingVideo && videoState !== "active" && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 100, backdropFilter: "blur(8px)"
-        }}>
-          <div style={{
-            background: "#111", border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 20, padding: 32, textAlign: "center", maxWidth: 320,
-            animation: "fadeUp 0.3s ease"
-          }}>
-            <Avatar name={DisplayPartnerName} size={64} />
-            <p style={{ color: "#f0ede8", marginTop: 16, marginBottom: 4, fontSize: 15, fontWeight: 700 }}>
-              Incoming Video Call
-            </p>
-            <p style={{ color: "#555", fontSize: 12, marginBottom: 28 }}>Student wants to video chat</p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-              <button onClick={declineIncoming} style={{
-                background: "rgba(196,50,50,0.15)", border: "1px solid rgba(196,50,50,0.3)",
-                color: "#c43232", padding: "12px 24px", borderRadius: 10, cursor: "pointer",
-                fontFamily: "'Space Mono', monospace", fontSize: 12
-              }}>✕ Decline</button>
-              <button onClick={acceptIncoming} style={{
-                background: "rgba(26,147,111,0.2)", border: "1px solid rgba(26,147,111,0.4)",
-                color: "#1a936f", padding: "12px 24px", borderRadius: 10, cursor: "pointer",
-                fontFamily: "'Space Mono', monospace", fontSize: 12
-              }}>✓ Accept</button>
+        <div className="scrim">
+          <div className="plate modal" role="dialog" aria-modal="true" aria-labelledby="incoming-title">
+            <Print name={partnerName} size={64} latent={!isFriends} />
+            <h2 id="incoming-title" className="display">Video call</h2>
+            <p>{DisplayPartnerName} wants to switch to video. Your camera and mic turn on if you accept.</p>
+            <div className="modal-btns">
+              <button className="btn btn-quiet" onClick={declineIncoming}><X /> Decline</button>
+              <button className="btn btn-red" onClick={acceptIncoming}><Video /> Accept</button>
             </div>
           </div>
         </div>
       )}
 
       {showReport && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          zIndex: 100, backdropFilter: "blur(8px)"
-        }}>
-          <div style={{
-            background: "#111", border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 20, padding: 32, maxWidth: 340, animation: "fadeUp 0.3s ease"
-          }}>
-            <h3 style={{ color: "#f0ede8", margin: "0 0 16px", fontSize: 16 }}>Report User</h3>
+        <div className="scrim" onClick={e => { if (e.target === e.currentTarget && !reported) setShowReport(false); }}>
+          <div className="plate modal" role="dialog" aria-modal="true" aria-labelledby="report-title">
+            <h2 id="report-title" className="display" style={{ marginTop: 8 }}>Report</h2>
             {reported ? (
               <div>
-                <p style={{ color: "#1a936f", fontSize: 13, margin: "0 0 20px" }}>✓ Report submitted. Moderators will review.</p>
-                <button onClick={() => { setShowReport(false); handleSkip(); }} style={{
-                  background: "#ff6b35", border: "none", borderRadius: 8, padding: "10px 20px",
-                  color: "#0a0a0a", cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: 12
-                }}>Skip & Continue</button>
+                <p className="modal-ok"><Check /> Thanks. Your report has been noted.</p>
+                <button className="btn btn-red btn-block" onClick={() => { setShowReport(false); handleSkip(); }}>
+                  {isDirect ? "Leave chat" : "Skip to someone new"}
+                </button>
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {["Harassment", "Inappropriate content", "Spam", "Other"].map(r => (
-                  <button key={r} onClick={() => setReported(true)} style={{
-                    background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
-                    color: "#d8d4cf", padding: "12px 16px", borderRadius: 8, cursor: "pointer",
-                    fontFamily: "'Space Mono', monospace", fontSize: 12, textAlign: "left",
-                    transition: "all 0.2s"
-                  }}
-                    onMouseEnter={e => { e.target.style.background = "rgba(196,50,50,0.1)"; e.target.style.color = "#c43232"; }}
-                    onMouseLeave={e => { e.target.style.background = "rgba(255,255,255,0.04)"; e.target.style.color = "#d8d4cf"; }}
-                  >{r}</button>
-                ))}
-                <button onClick={() => setShowReport(false)} style={{
-                  background: "transparent", border: "none", color: "#444",
-                  cursor: "pointer", fontFamily: "'Space Mono', monospace", fontSize: 11, marginTop: 8
-                }}>Cancel</button>
-              </div>
+              <>
+                <p>What's going on?</p>
+                <div className="report-list">
+                  {["Harassment", "Inappropriate content", "Spam", "Other"].map(r => (
+                    <button key={r} className="btn btn-quiet" onClick={() => setReported(true)}>{r}</button>
+                  ))}
+                </div>
+                <button className="btn btn-text" onClick={() => setShowReport(false)}>Cancel</button>
+              </>
             )}
           </div>
         </div>
@@ -1592,7 +1281,7 @@ export default function App() {
   const [isInitializing, setIsInitializing] = useState(true);
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [isWakingServer, setIsWakingServer] = useState(false);
-
+  const [flashKey, setFlashKey] = useState(0);
   useEffect(() => {
     socket.on('online_users', (users) => {
         setOnlineUsers(users);
@@ -1701,6 +1390,7 @@ export default function App() {
     setRoom(roomName);
     setPartnerId(peerId);
     setIsDirectChat(isDirect);
+    setFlashKey(k => k + 1);
     setScreen("chat");
   }
 
@@ -1721,26 +1411,22 @@ export default function App() {
     setScreen("dashboard");
   }
 
-  useEffect(() => {
-    const link = document.createElement("link");
-    link.href = "https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap";
-    link.rel = "stylesheet";
-    document.head.appendChild(link);
-  }, []);
-
   if (isInitializing) {
       return (
-        <div style={{ minHeight: "100vh", background: "#080808", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Space Mono', monospace", color: "#666" }}>
-           <Noise />
-           Loading session...
+        <div className="interior waiting">
+           <main className="waiting-body" aria-live="polite">
+             <span className="lamp lamp-pulse" style={{ width: 20, height: 20, marginBottom: 24 }} />
+             <p className="label" style={{ color: "var(--text-2)" }}>Opening the booth…</p>
+           </main>
            {isWakingServer && <ServerWakeupUI />}
         </div>
       );
   }
 
   return (
-    <div style={{ fontFamily: "'Space Mono', monospace" }}>
+    <>
       {isWakingServer && <ServerWakeupUI />}
+      {flashKey > 0 && <div key={flashKey} className="flash" aria-hidden="true" />}
       {screen === "landing" && <LandingScreen onLogin={handleLogin} onWakeup={setIsWakingServer} />}
       {screen === "dashboard" && (
         <DashboardScreen
@@ -1787,6 +1473,6 @@ export default function App() {
           onEnd={handleEnd}
         />
       )}
-    </div>
+    </>
   );
 }
