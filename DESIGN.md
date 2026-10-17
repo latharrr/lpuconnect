@@ -133,7 +133,7 @@ The mechanism is the identity. Strangers are **latent prints**: fogged silver fr
 - Condensed uppercase signage (Big Shoulders Display) for headings, and a workhorse grotesque (Archivo) for everything people read.
 - Controls are physical: enamel plates with screw heads, square push-buttons that press in, and a big red button with a weighted bottom edge.
 - One 4px unit across frames, borders and spacing.
-- Motion grammar: flash, develop, feed. Nothing else animates for show.
+- Motion grammar: flash, develop, feed (the sample strip rolls slowly out of the slot, 56s per loop). Nothing else animates for show.
 
 ## Colors
 
@@ -240,6 +240,9 @@ Big Shoulders 24px tabular numerals in tungsten, labeled LEFT. Under 60 seconds 
 ### Inputs
 Booth-dark fill, booth-line border, 4px radius, 16px text so iOS doesn't zoom. Focus switches to a tungsten border with a 3px amber glow.
 
+### Sample Strip
+A paper strip with six frames of CC0 campus photos, silver-toned to grayscale and kept in `frontend/public/strip/` with the origin embedded in each file. Each frame carries an illustrative chat line or event chip (lamp-amber). It feeds down out of the delivery slot on a seamless 56s linear loop (two identical runs, translateY -50% to 0), pauses on hover, sits still under reduced motion, and fades out at the bottom with a mask. It is always captioned as an example. No photo shows a recognisable face.
+
 ### Flash
 On every match, a full-screen warm white (#fffaf0) layer peaks at 8% of a 900ms ease-out, then fades. It is disabled under prefers-reduced-motion.
 
@@ -247,6 +250,7 @@ On every match, a full-screen warm white (#fffaf0) layer peaks at 8% of a 900ms 
 
 ### Do:
 - **Do** keep the landing on the curtain, with the action inside the plate at thumb height.
+- **Do** keep strip photos grayscale, faceless and CC0, with origin embedded in each file.
 - **Do** show anonymous people as latent prints, and develop them only on mutual friend acceptance.
 - **Do** say whose move it is in plain words whenever consent is pending.
 - **Do** use the 12px label for every printed instruction, and lucide icons for every pictogram.

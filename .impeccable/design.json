@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-17T22:02:22.845218+00:00",
+  "generatedAt": "2026-10-17T22:09:49.578894+00:00",
   "title": "Design System: UniConnect",
   "extensions": {
     "colorMeta": {
@@ -142,8 +142,8 @@
       },
       {
         "name": "feed",
-        "value": "1600ms translateY",
-        "purpose": "Sample strip feeding out of the slot."
+        "value": "56s linear infinite, translateY(-50%) to 0",
+        "purpose": "Sample strip rolling out of the slot; pauses on hover."
       }
     ],
     "breakpoints": [
@@ -223,7 +223,7 @@
       "Condensed uppercase signage (Big Shoulders Display) for headings, and a workhorse grotesque (Archivo) for everything people read.",
       "Controls are physical: enamel plates with screw heads, square push-buttons that press in, and a big red button with a weighted bottom edge.",
       "One 4px unit across frames, borders and spacing.",
-      "Motion grammar: flash, develop, feed. Nothing else animates for show."
+      "Motion grammar: flash, develop, feed (the sample strip rolls slowly out of the slot, 56s per loop). Nothing else animates for show."
     ],
     "rules": [
       {
@@ -254,6 +254,7 @@
     ],
     "dos": [
       "**Do** keep the landing on the curtain, with the action inside the plate at thumb height.",
+      "**Do** keep strip photos grayscale, faceless and CC0, with origin embedded in each file.",
       "**Do** show anonymous people as latent prints, and develop them only on mutual friend acceptance.",
       "**Do** say whose move it is in plain words whenever consent is pending.",
       "**Do** use the 12px label for every printed instruction, and lucide icons for every pictogram.",
