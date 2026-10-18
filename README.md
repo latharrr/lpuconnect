@@ -2,7 +2,6 @@
 
 > Anonymous campus chat & video calls for university students.
 
-**Live:** [uniconnect.deepanshulathar.dev](https://uniconnect.deepanshulathar.dev) · **Backend:** [lpuconnect.onrender.com](https://lpuconnect.onrender.com)
 
 ---
 
