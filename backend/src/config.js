@@ -54,7 +54,7 @@ export const config = {
     vapidSubject: env.VAPID_SUBJECT || '',
 
     sentryDsn: env.SENTRY_DSN || '',
-    release: env.RELEASE || env.GIT_SHA || 'dev',
+    release: env.RELEASE || env.GIT_SHA || env.RENDER_GIT_COMMIT?.slice(0, 12) || 'dev',
     alertWebhookUrl: env.ALERT_WEBHOOK_URL || '',
     logLevel: env.LOG_LEVEL || (isTest ? 'silent' : 'info'),
 
