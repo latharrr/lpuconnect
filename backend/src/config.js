@@ -31,6 +31,9 @@ export const config = {
     backupKeep: int(env.BACKUP_KEEP, 14),
 
     sessionTtlMs: int(env.SESSION_TTL_HOURS, 24 * 7) * 60 * 60 * 1000,
+    // httpOnly cookie sessions: only when the API shares a site with the app (e.g. api.example.com + example.com).
+    cookieAuth: env.COOKIE_AUTH === 'true',
+    cookieDomain: env.COOKIE_DOMAIN || '',
     deviceSalt: env.DEVICE_SALT || (isProd ? '' : 'dev-device-salt'),
     analyticsSalt: env.ANALYTICS_SALT || (isProd ? '' : 'dev-analytics-salt'),
 

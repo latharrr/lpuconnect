@@ -6,3 +6,6 @@ node_modules/
 *.sqlite-*
 *.db
 *.log
+backend/data/
+.impeccable/mocks/
+.impeccable/review/

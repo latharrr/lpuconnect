@@ -1,1 +1,36 @@
-<!doctype html><title>admin</title>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>UniConnect Admin</title>
+    <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+    <div id="login" class="login" hidden>
+        <div class="plate">
+            <h1>UniConnect admin</h1>
+            <p>Sign in with an allow-listed Google account. Keep 2-step verification on for that account.</p>
+            <div id="gsi"></div>
+            <form id="devform" hidden>
+                <label for="devtoken">Development token</label>
+                <input id="devtoken" type="password" autocomplete="off" />
+                <button class="btn primary" type="submit">Sign in</button>
+            </form>
+            <p id="loginerr" class="err" role="alert"></p>
+        </div>
+    </div>
+
+    <div id="app" class="app" hidden>
+        <header class="top">
+            <strong class="brand"><span class="lamp"></span> UniConnect admin</strong>
+            <nav id="tabs" class="tabs" aria-label="Sections"></nav>
+            <div class="who"><span id="who"></span> <button id="logout" class="btn ghost">Log out</button></div>
+        </header>
+        <main id="view" class="view" tabindex="-1"></main>
+    </div>
+
+    <script src="admin.js" type="module"></script>
+</body>
+</html>

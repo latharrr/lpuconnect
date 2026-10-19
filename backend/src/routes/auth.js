@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { OAuth2Client } from 'google-auth-library';
 import { config } from '../config.js';
 import { run, get, tx } from '../db.js';
-import { createSession, rotateSession, revokeSession, bearer, validateSession } from '../sessions.js';
+import { createSession, rotateSession, revokeSession, bearer, validateSession, setSessionCookie } from '../sessions.js';
 import { getUser, invalidateUser, selfView, friendsOf, banState, deviceBanned } from '../users.js';
 import { track } from '../events.js';
 import { HttpError } from '../errors.js';
@@ -43,6 +43,7 @@ function recordConsent(email) {
 }
 
 function respond(res, email, extra = {}) {
+    if (extra.token) setSessionCookie(res, extra.token);
     invalidateUser(email);
     const user = getUser(email);
     res.json({ user: selfView(user), friends: friendsOf(email), ...extra });
@@ -123,6 +124,7 @@ authRouter.post('/resume', (req, res) => {
     const ban = banState(user);
     if (ban) {
         revokeSession(rotated.token);
+        setSessionCookie(res, null);
         throw new HttpError(403, 'banned', `Suspended until ${ban.until}`);
     }
     run('UPDATE users SET last_seen = ? WHERE email = ?', new Date(now()).toISOString(), rotated.email);
@@ -132,5 +134,6 @@ authRouter.post('/resume', (req, res) => {
 
 authRouter.post('/logout', (req, res) => {
     revokeSession(bearer(req));
+    setSessionCookie(res, null);
     res.json({ ok: true });
 });

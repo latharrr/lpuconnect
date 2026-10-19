@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 import { config } from '../config.js';
 import { run } from '../db.js';
-import { validateSession } from '../sessions.js';
+import { validateSession, cookieToken } from '../sessions.js';
 import { getUser, banState, friendEmails, friendView, emailByPublicId, areFriends, isBlockedEither, addFriendship, touchFriendChat, invalidateUser } from '../users.js';
 import { track } from '../events.js';
 import { captureError } from '../errors.js';
@@ -49,7 +49,7 @@ export function setupRealtime(server) {
 
 // Unauthenticated or banned sockets never connect.
 function authenticate(socket, next) {
-    const email = validateSession(socket.handshake.auth?.token);
+    const email = validateSession(socket.handshake.auth?.token || cookieToken(socket.handshake.headers.cookie));
     if (!email) return next(new Error('unauthorized'));
     const user = getUser(email);
     if (!user) return next(new Error('unauthorized'));

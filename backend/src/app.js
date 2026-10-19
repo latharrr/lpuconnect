@@ -27,20 +27,28 @@ export function createApp() {
                 styleSrc: ["'self'", "'unsafe-inline'", 'https://accounts.google.com/gsi/style', 'https://fonts.googleapis.com'],
                 fontSrc: ["'self'", 'https://fonts.gstatic.com'],
                 imgSrc: ["'self'", 'data:', 'https://*.googleusercontent.com'],
+                upgradeInsecureRequests: config.isProd ? [] : null,
             },
         },
         hsts: config.isProd ? { maxAge: 31536000, includeSubDomains: true } : false,
     }));
 
-    app.use(cors({
-        origin(origin, cb) {
-            if (!origin || config.allowedOrigins.includes(origin)) return cb(null, true);
-            cb(new Error('cors_denied'));
-        },
-        methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-        allowedHeaders: ['Content-Type', 'Authorization'],
-        credentials: true,
-    }));
+    // Allowed app origins, plus this server's own origin (the admin panel).
+    const corsMw = cors((req, cb) => {
+        const origin = req.get('origin');
+        const self = `${req.protocol}://${req.get('host')}`;
+        if (!origin || origin === self || config.allowedOrigins.includes(origin)) {
+            return cb(null, {
+                origin: true,
+                methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+                allowedHeaders: ['Content-Type', 'Authorization', 'X-App-Version'],
+                credentials: true,
+            });
+        }
+        cb(new Error('cors_denied'));
+    });
+    // CORS applies to the API only; the admin page's own static files are same-origin.
+    app.use(['/api', '/admin/api', '/socket.io'], corsMw);
 
     const limiter = (windowMs, limit) => rateLimit({
         windowMs, limit, standardHeaders: 'draft-7', legacyHeaders: false,
@@ -49,6 +57,16 @@ export function createApp() {
     });
 
     app.use(express.json({ limit: '10kb' }));
+
+    // CSRF guard for cookie sessions: state-changing requests must come from an allowed origin.
+    if (config.cookieAuth) {
+        app.use((req, res, next) => {
+            if (['GET', 'HEAD', 'OPTIONS'].includes(req.method) || req.get('authorization')) return next();
+            const origin = req.get('origin');
+            if (origin && !config.allowedOrigins.includes(origin)) return res.status(403).json({ error: 'origin_not_allowed' });
+            next();
+        });
+    }
 
     app.get('/health', healthHandler);
     app.use('/api/auth', limiter(60_000, 10), authRouter);

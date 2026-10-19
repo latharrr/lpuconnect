@@ -106,3 +106,9 @@ test('client events: only allow-listed names, never text', async () => {
     assert.deepEqual(rows.map(x => x.event), ['landing_view']);
     assert.ok(!rows[0].props.includes('secret'));
 });
+
+test('X12: logout revokes the session', async () => {
+    const g = await h.guest();
+    assert.equal((await h.http('POST', '/api/auth/logout', { token: g.token })).status, 200);
+    assert.equal((await h.http('GET', '/api/me', { token: g.token })).status, 401);
+});

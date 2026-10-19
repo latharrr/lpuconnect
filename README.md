@@ -55,7 +55,6 @@ lpuconnect/
 │   │   ├── main.jsx         # React entry point
 │   │   └── index.css        # Global styles + mobile responsive
 │   ├── public/
-│   │   └── uniconnect.apk   # Android APK download
 │   ├── android/              # Capacitor Android project
 │   ├── capacitor.config.json
 │   ├── vite.config.js

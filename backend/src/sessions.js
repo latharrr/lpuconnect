@@ -44,7 +44,28 @@ export function purgeExpiredSessions() {
     return run('DELETE FROM sessions WHERE expires_at < ?', now()).changes;
 }
 
+export const COOKIE = 'uc_session';
+
+export function cookieToken(cookieHeader) {
+    if (!config.cookieAuth || !cookieHeader) return null;
+    for (const part of cookieHeader.split(';')) {
+        const [k, ...v] = part.trim().split('=');
+        if (k === COOKIE) return decodeURIComponent(v.join('='));
+    }
+    return null;
+}
+
+// Bearer header first (web and Android), then the httpOnly cookie when cookie auth is on.
 export function bearer(req) {
     const h = req.get('authorization') || '';
-    return h.startsWith('Bearer ') ? h.slice(7).trim() : null;
+    if (h.startsWith('Bearer ')) return h.slice(7).trim();
+    return cookieToken(req.get('cookie'));
+}
+
+export function setSessionCookie(res, token) {
+    if (!config.cookieAuth) return;
+    const parts = [`${COOKIE}=${encodeURIComponent(token || '')}`, 'Path=/', 'HttpOnly', 'Secure', 'SameSite=Lax',
+        `Max-Age=${token ? Math.floor(config.sessionTtlMs / 1000) : 0}`];
+    if (config.cookieDomain) parts.push(`Domain=${config.cookieDomain}`);
+    res.append('Set-Cookie', parts.join('; '));
 }

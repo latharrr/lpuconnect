@@ -1,8 +1,13 @@
 {
   "appId": "com.lpuconnect.app",
-  "appName": "LPUConnect",
+  "appName": "UniConnect",
   "webDir": "dist",
   "server": {
-    "cleartext": true
+    "androidScheme": "https",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false,
+    "webContentsDebuggingEnabled": false
   }
 }

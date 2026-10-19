@@ -6,7 +6,7 @@
 
 web
 
-(Also ships as an Android APK via a Capacitor wrapper around the same web UI; the design language stays web.)
+(A Capacitor Android wrapper exists in the repo, but no APK is distributed from the site; the design language stays web.)
 
 ## Users
 
@@ -27,7 +27,7 @@ Anonymity comes first, and identity is earned by both sides. Nobody is revealed 
 - Entry is a guest login: choose a gender, tap enter, and receive a generated handle (`Guest-xxxxxx`). There is no sign-up and no email. A Google login endpoint exists on the backend but is not used in the UI.
 - Screens: landing, dashboard (profile, bio, friends list with online status), random matching, direct "calling a friend" wait, chat (timer, enjoy, friend request, extend, report, skip), video call (mute, camera, end), incoming-call and report modals, and a server wake-up overlay.
 - The backend runs on Render's free tier, so it sleeps when idle. The first request can take about a minute, which the wake-up overlay covers.
-- Mostly used on phones, often on Android (APK download offered from the landing page).
+- Mostly used on phones, often on Android.
 
 ## Capabilities and Constraints
 
