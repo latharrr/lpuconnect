@@ -42,7 +42,6 @@ export const config = {
     adminEmails: list(env.ADMIN_EMAILS).map(e => e.toLowerCase()),
     adminDevToken: isProd ? '' : (env.ADMIN_DEV_TOKEN || ''),
 
-    peerKey: env.PEER_KEY || (isProd ? '' : 'uniconnect-dev'),
     turnUrls: list(env.TURN_URLS),
     turnSecret: env.TURN_SECRET || '',
     turnTtlSec: int(env.TURN_TTL_SECONDS, 3600),
@@ -86,7 +85,6 @@ export function assertConfig(c = config) {
     if (c.allowedOrigins.length === 0) missing.push('ALLOWED_ORIGINS');
     if (!c.deviceSalt) missing.push('DEVICE_SALT');
     if (!c.analyticsSalt) missing.push('ANALYTICS_SALT');
-    if (!c.peerKey) missing.push('PEER_KEY');
     if (missing.length) {
         throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
     }
