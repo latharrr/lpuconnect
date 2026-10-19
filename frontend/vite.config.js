@@ -1,24 +1,17 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import legacy from '@vitejs/plugin-legacy'
 
-// Modern browsers load the ES2020 bundle; only old Android WebViews fetch the legacy one.
+// One ES2020 bundle (Chrome/Edge 80+, Safari 14+, Firefox 80+). The legacy build was dropped (spec P8).
 export default defineConfig({
   plugins: [
     react(),
-    legacy({
-      targets: ['Chrome >= 61', 'Android >= 7'],
-      modernPolyfills: false,
-      renderLegacyChunks: true,
-      additionalLegacyPolyfills: ['regenerator-runtime/runtime'],
-    }),
   ],
   esbuild: {
     drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
   },
   build: {
     target: 'es2020',
-    cssTarget: 'chrome61',
+    cssTarget: ['chrome80', 'safari14'],
     reportCompressedSize: true,
     rollupOptions: {
       output: {

@@ -22,6 +22,6 @@ Short records of choices the spec asked to document, or that a future contributo
 
 **P9 / P10. Deferred: Postgres and Redis.** Load testing (`docs/LOADTEST.md`) shows one Node process handles 2,000 concurrent chatters on one core. Trigger for P9: sustained writes over ~50/s or a second instance. Trigger for P10: needing more than one process.
 
-**P8. Bundles.** The main bundle targets ES2020; `@vitejs/plugin-legacy` still emits a legacy bundle that only old Android WebViews download. Drop it once analytics (Admin → Quality → app versions/devices) shows no old devices.
+**P8. Bundles.** One ES2020 bundle (Chrome/Edge 80+, Safari 14+, Firefox 80+), about 98 KB gzip for the first screen. The legacy build was dropped: it existed for old Android WebViews in the APK, which is no longer distributed, and its feature-detection script needs `data:` in the CSP. Re-add `@vitejs/plugin-legacy` only if Admin → Quality shows meaningful old-browser traffic.
 
 **Hosting.** Render free remains usable for a pilot but wipes the database on every deploy and sleeps when idle. Everything needed for the VPS move is in `deploy/` and `docs/RUNBOOK.md`.

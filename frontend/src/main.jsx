@@ -1,4 +1,3 @@
-import 'regenerator-runtime/runtime';
 import { createRoot } from 'react-dom/client';
 import '@fontsource/big-shoulders-display/700';
 import '@fontsource/big-shoulders-display/800';
