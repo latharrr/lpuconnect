@@ -18,7 +18,7 @@ const int = (v, fallback) => (v === undefined || v === '' ? fallback : Number.pa
 const isTest = env.NODE_ENV === 'test';
 // Render sets RENDER=true on its services; treat that as production even without NODE_ENV.
 const isProd = env.NODE_ENV === 'production' || (env.RENDER === 'true' && !isTest);
-const PROD_ORIGINS = ['https://uniconnect.deepanshulathar.dev', 'https://lputv.deepanshulathar.dev', 'https://lputv.vercel.app', 'https://localhost', 'capacitor://localhost'];
+const PROD_ORIGINS = ['https://lputv.vercel.app', 'https://localhost', 'capacitor://localhost'];
 
 export const config = {
     root: ROOT,

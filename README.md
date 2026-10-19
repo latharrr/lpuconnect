@@ -19,7 +19,7 @@
 
 ### 🔒 Security
 - **Rate Limiting:** 50 API reqs/15m, 5 logins/min to prevent flooding
-- **CORS Lockdown:** API restricted to verified frontend domains (`*.vercel.app`, `*.deepanshulathar.dev`)
+- **CORS Lockdown:** API restricted to the live frontend (`lputv.vercel.app`) and the Android app
 - **Session Tokens:** Cryptographic tokens (24h expiry) sent via Socket.IO handshake auth
 - **XSS Prevention:** Automatic HTML/script sanitization on all chat messages
 - **Helmet Headers:** HTTP security headers with strict cross-origin policies
