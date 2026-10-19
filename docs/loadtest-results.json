@@ -1,0 +1,83 @@
+{
+  "at": "2026-10-19T18:41:47.775Z",
+  "url": "local child process",
+  "node": "v24.19.0",
+  "results": [
+    {
+      "users": 100,
+      "loggedIn": 100,
+      "connected": 100,
+      "matched": 100,
+      "failed": 0,
+      "matchMs": {
+        "p50": 1086,
+        "p95": 1915,
+        "max": 1950
+      },
+      "messagesDelivered": 1000,
+      "server": {
+        "peakCpuPct": 11.1,
+        "peakRssMb": 97,
+        "peakHeapMb": 24,
+        "peakLoopLagMs": 22
+      }
+    },
+    {
+      "users": 500,
+      "loggedIn": 500,
+      "connected": 500,
+      "matched": 500,
+      "failed": 0,
+      "matchMs": {
+        "p50": 1025,
+        "p95": 1919,
+        "max": 1999
+      },
+      "messagesDelivered": 5000,
+      "server": {
+        "peakCpuPct": 22.8,
+        "peakRssMb": 161,
+        "peakHeapMb": 50,
+        "peakLoopLagMs": 27
+      }
+    },
+    {
+      "users": 1000,
+      "loggedIn": 1000,
+      "connected": 1000,
+      "matched": 1000,
+      "failed": 0,
+      "matchMs": {
+        "p50": 1000,
+        "p95": 1909,
+        "max": 1999
+      },
+      "messagesDelivered": 10000,
+      "server": {
+        "peakCpuPct": 43.4,
+        "peakRssMb": 239,
+        "peakHeapMb": 83,
+        "peakLoopLagMs": 24
+      }
+    },
+    {
+      "users": 2000,
+      "loggedIn": 2000,
+      "connected": 2000,
+      "matched": 2000,
+      "failed": 0,
+      "matchMs": {
+        "p50": 1014,
+        "p95": 1876,
+        "max": 2000
+      },
+      "messagesDelivered": 20000,
+      "server": {
+        "peakCpuPct": 54.2,
+        "peakRssMb": 290,
+        "peakHeapMb": 127,
+        "peakLoopLagMs": 24
+      }
+    }
+  ]
+}

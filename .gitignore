@@ -9,3 +9,5 @@ node_modules/
 backend/data/
 .impeccable/mocks/
 .impeccable/review/
+e2e/test-results/
+e2e/playwright-report/

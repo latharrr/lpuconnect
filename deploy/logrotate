@@ -1,0 +1,11 @@
+# /etc/logrotate.d/uniconnect
+/var/log/uniconnect/*.log {
+    daily
+    rotate 14
+    maxsize 50M
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}

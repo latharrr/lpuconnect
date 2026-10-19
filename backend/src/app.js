@@ -69,7 +69,7 @@ export function createApp() {
     }
 
     app.get('/health', healthHandler);
-    app.use('/api/auth', limiter(60_000, 10), authRouter);
+    app.use('/api/auth', limiter(60_000, Number(process.env.AUTH_RATE_LIMIT || 10)), authRouter);
     app.use('/api/events', limiter(60_000, 60));
     app.use('/api', limiter(15 * 60_000, 300));
     app.use('/api', publicRouter);
