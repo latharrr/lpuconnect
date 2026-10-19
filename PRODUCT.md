@@ -24,18 +24,18 @@ Anonymity comes first, and identity is earned by both sides. Nobody is revealed 
 
 ## Operating Context
 
-- Entry is a guest login: choose a gender, tap enter, and receive a generated handle (`Guest-xxxxxx`). There is no sign-up and no email. A Google login endpoint exists on the backend but is not used in the UI.
-- Screens: landing, dashboard (profile, bio, friends list with online status), random matching, direct "calling a friend" wait, chat (timer, enjoy, friend request, extend, report, skip), video call (mute, camera, end), incoming-call and report modals, and a server wake-up overlay.
+- Entry is a guest login: choose a gender, confirm 18+ and accept the terms, and receive a generated handle (`Guest-xxxxxx`). Optional Google sign-in gives a verified badge for college domains (`VERIFIED_DOMAINS`, default `lpu.in`).
+- Screens: landing, onboarding (rules, camera explainer, consent), dashboard (profile, bio, interests, friends with presence, settings, data export/delete), random matching (queue size, tips, feedback), direct calling, chat (alias, timer, consent rail, icebreakers, extend, report/block, skip), video call, legal pages (/safety, /privacy, /terms), server wake-up overlay, and an admin panel at `/admin` on the API.
 - The backend runs on Render's free tier, so it sleeps when idle. The first request can take about a minute, which the wake-up overlay covers.
 - Mostly used on phones, often on Android.
 
 ## Capabilities and Constraints
 
 - Random chats last 10 minutes. Extending resets the timer to 10 minutes and needs both people to agree. Video unlocks 30 seconds into a random chat. Direct chats with friends have no timer.
-- Real-time transport is Socket.IO and video is PeerJS/WebRTC. Server event names, payloads, and flows are fixed; UI work must not change them.
-- Messages are sanitized server-side and capped at 2KB.
-- Report reasons: Harassment, Inappropriate content, Spam, Other. Reporting is UI-only today; there is no moderation pipeline behind it.
-- Frontend: React 19 + Vite 7, with a legacy plugin for older Android Chrome. lucide-react is installed.
+- Real-time transport is Socket.IO; WebRTC signalling runs over the authenticated socket (no PeerJS). The server holds all two-sided consent state; the client only mirrors it.
+- Messages are relayed, never stored, capped at 2,000 characters, and rendered as plain text (no HTML escaping on the server).
+- Report reasons: Harassment, Inappropriate content, Spam, Underage, Other. Reports are stored with chat metadata, auto-block the pair, and feed the admin moderation queue; several distinct reporters suspend an account automatically.
+- Frontend: React 19 + Vite 7 (ES2020 bundle plus a legacy bundle for old Android WebViews), lucide-react icons, English and Hindi.
 
 ## Brand Commitments
 
@@ -45,7 +45,7 @@ Anonymity comes first, and identity is earned by both sides. Nobody is revealed 
 ## Evidence on Hand
 
 - There are no real usage figures, testimonials, or press.
-- **Do not claim:** user counts (including "30k+"), "verified students", "encrypted", or "safe" as a guarantee. Guest login verifies no one, and chat goes over the socket server rather than end-to-end encryption.
+- **Do not claim:** user counts (including "30k+"), "encrypted" chat, or "safe" as a guarantee. "Verified" may only be shown on accounts that signed in with a Google account from a verified domain; guests are unverified.
 - True claims: anonymous by default, no sign-up, 10-minute chats, mutual opt-in before identities are revealed, optional video, friends and direct messages, Android app.
 
 ## Product Principles

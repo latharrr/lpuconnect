@@ -1,184 +1,62 @@
-# UniConnect 🔥
+# UniConnect
 
-> Anonymous campus chat & video calls for university students.
+A photo booth for conversation. Two university students are paired at random for a ten-minute anonymous chat, with optional video. If both tap "Enjoying this" they can add each other, and names are revealed only when both accept.
 
+**Live:** https://lputv.vercel.app · **API:** https://lpuconnect.onrender.com (`/health`, `/admin`)
 
----
-
-## ✨ Features
-
-| Feature | Description |
-|---------|-------------|
-| 🎭 **Anonymous Chat** | Connect with random students instantly — no sign-up required |
-| 📹 **Video Calls** | One-click WebRTC video with low-latency peer-to-peer streaming |
-| 👫 **Friend System** | Mutual "Enjoy" → Unlock friend requests → Reveal identities |
-| ⏱️ **Timed Chats** | 10-minute random sessions with extend timer requests |
-| 💬 **Direct Messaging** | Chat with unlocked friends anytime via deterministic rooms |
-| 📱 **Android App** | Capacitor-powered native APK with camera/mic permissions |
-| 🟢 **Online Status** | See which friends are currently online in real-time |
-
-### 🔒 Security
-- **Rate Limiting:** 50 API reqs/15m, 5 logins/min to prevent flooding
-- **CORS Lockdown:** API restricted to the live frontend (`lputv.vercel.app`) and the Android app
-- **Session Tokens:** Cryptographic tokens (24h expiry) sent via Socket.IO handshake auth
-- **XSS Prevention:** Automatic HTML/script sanitization on all chat messages
-- **Helmet Headers:** HTTP security headers with strict cross-origin policies
-- **Payload Limits:** 2KB max per message, 10KB max JSON body
-
----
-
-## 🏗️ Tech Stack
-
-### Frontend
-- **React 19** + **Vite 7** — Fast SPA with HMR
-- **Socket.IO Client** — Real-time WebSocket communication
-- **PeerJS** — WebRTC video calls (STUN/TURN via Google & OpenRelay)
-- **Capacitor 8** — Native Android wrapper
-- **Legacy Plugin** — Android 7+ / Chrome 52+ compatibility
-
-### Backend
-- **Node.js** + **Express 5** — REST API & signaling server
-- **Socket.IO** — Real-time event system (matching, chat, video signaling)
-- **PeerJS Server** — WebRTC coordination
-- **SQLite3** — Lightweight user & friends database
-- **Google Auth Library** — Optional Google OAuth login
-
----
-
-## 📂 Project Structure
+## How it fits together
 
 ```
-lpuconnect/
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx          # All screens (Landing, Dashboard, Matching, Chat)
-│   │   ├── main.jsx         # React entry point
-│   │   └── index.css        # Global styles + mobile responsive
-│   ├── public/
-│   ├── android/              # Capacitor Android project
-│   ├── capacitor.config.json
-│   ├── vite.config.js
-│   └── package.json
-├── backend/
-│   ├── server.js            # Express + Socket.IO + PeerJS server
-│   ├── db.js                # SQLite setup & helpers
-│   └── package.json
-└── README.md
+frontend/   React 19 + Vite. Screens in src/screens, hooks/libs in src/lib, Hindi + English (src/i18n).
+            PWA (sw.js, manifest), Capacitor Android wrapper in android/ (not distributed).
+backend/    Node 22 + Express 5 + Socket.IO, SQLite via node:sqlite (WAL, versioned migrations).
+            src/routes (auth, me, public), src/realtime (matching queue, rooms, presence, WebRTC signalling),
+            src/admin (metrics + API), admin/ (admin panel UI), jobs (rollups, retention, backups, alerts).
+deploy/     pm2, nginx, coturn, deploy.sh (gated, auto-rollback), smoke test, cron, logrotate.
+e2e/        Playwright: two browsers with fake camera/mic run the whole flow.
+docs/       Runbook, data inventory, breach plan, decisions, load test report.
 ```
 
----
+### What the server guarantees
 
-## 🚀 Quick Start
+- **Nobody is identified before both say yes.** Strangers get a random alias; names and profiles are sent only after mutual friend acceptance. Emails never leave the server.
+- **Every room action is authorised.** Sockets need a valid session; every event checks room membership; enjoy, friend, extend and video steps need both sides, tracked server-side.
+- **Messages and video are never stored.** Text is relayed only; video is peer-to-peer (or relayed by your own TURN). Tests scan the database to prove it.
+- **Safety:** Report (with reason and note) ends the chat and blocks the pair; several distinct reports suspend an account automatically; device-level bans stop instant re-registration; all admin actions go to an append-only audit log.
+- **Consent:** 18+, terms and privacy consent stored with a timestamp; export and delete your data from Settings.
 
-### Prerequisites
-- Node.js 18+
-- npm 9+
-
-### Backend
-```bash
-cd backend
-npm install
-npm start
-# Server runs on http://localhost:3001
-```
-
-### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-# App runs on http://localhost:5173
-```
-
-### Environment Variables
-Create a `.env` file in `frontend/`:
-```env
-VITE_BACKEND_URL=http://localhost:3001
-```
-
-For production, set this to your Render backend URL.
-
----
-
-## 📱 Android APK Build
+## Run it locally
 
 ```bash
-cd frontend
-npm run build              # Build production web assets
-npx cap sync android       # Sync to Android project
-cd android
-./gradlew assembleDebug    # Build debug APK
+cd backend && npm install && npm run dev          # http://localhost:3001  (data in backend/data/)
+cd frontend && npm install && npm run dev         # http://localhost:5173
 ```
 
-APK output: `android/app/build/outputs/apk/debug/app-debug.apk`
+Admin panel locally: start the backend with `ADMIN_DEV_TOKEN=dev`, open http://localhost:3001/admin and sign in with `dev`.
 
----
+## Tests
 
-## 🌐 Deployment
+```bash
+cd backend && npm test                 # 39 tests: auth, room authorisation (B1-B6), queue, cleanup, migrations, backups, admin, CSV
+cd backend && npm run test:coverage    # ~84% of lines
+cd frontend && npm run lint && npm run build
+cd e2e && npm install && npx playwright install chromium && npx playwright test
+cd backend && npm run loadtest         # see docs/LOADTEST.md
+```
 
-| Service | Platform | Auto-deploy |
-|---------|----------|-------------|
-| Frontend | [Vercel](https://vercel.com) | ✅ On push to `main` |
-| Backend | [Render](https://render.com) | ✅ On push to `main` |
+CI (`.github/workflows/ci.yml`) runs all of this on every push plus `npm audit` and a gitleaks secret scan.
 
-### Vercel Settings
-- **Root Directory:** `frontend`
-- **Build Command:** `npm run build`
-- **Output Directory:** `dist`
+## Configuration
 
-### Render Settings
-- **Root Directory:** `backend`
-- **Build Command:** `npm install`
-- **Start Command:** `node server.js`
+Backend: `backend/.env.example` (every variable explained). On Render none are required: it detects `RENDER=true`, allows `https://lputv.vercel.app`, and generates its secrets on first boot. Set `GOOGLE_CLIENT_ID` + `ADMIN_EMAILS` for Google sign-in and the admin panel, `TURN_*` for reliable video across mobile networks, `VAPID_*` (`npm run vapid`) for push, `ALERT_WEBHOOK_URL` for the daily digest and spike alerts.
 
----
+Frontend: `frontend/.env.example` (`VITE_BACKEND_URL`, optional `VITE_SENTRY_DSN`, grievance contact).
 
-## 🔌 API Endpoints
+## Deploy
 
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/api/login/guest` | Create anonymous guest account |
-| POST | `/api/login/google` | Google OAuth login |
-| POST | `/api/login/resume` | Resume existing session |
-| POST | `/api/profile/bio` | Update user bio |
+- **Today:** push to `main`. Vercel builds `frontend/`; Render builds `backend/` (turn on Auto-Deploy in Render settings). Render free sleeps when idle and wipes the database on every deploy.
+- **Target:** a VPS with persistent disk. Follow `docs/RUNBOOK.md` and `deploy/`. `deploy/deploy.sh --staging` then `deploy/deploy.sh`.
 
----
-
-## 🔧 Socket Events
-
-### Client → Server
-| Event | Payload | Description |
-|-------|---------|-------------|
-| `register_user` | `email` | Register for online status |
-| `start_chat` | `{email, peerId, name, gender}` | Join random match queue |
-| `join_direct` | `{userEmail, friendEmail, ...}` | Join direct friend room |
-| `send_message` | `{room, text}` | Send chat message |
-| `skip` | `{room}` | Leave current chat |
-| `cancel_match` | — | Cancel matchmaking |
-| `video_request` | `{room}` | Request video call |
-| `video_accept/reject` | `{room}` | Respond to video request |
-| `enjoy_request` | `{room}` | Send mutual enjoy signal |
-| `friend_request/accept/reject` | `{room}` | Friend system actions |
-| `extend_request/accept/reject` | `{room}` | Timer extension actions |
-
-### Server → Client
-| Event | Description |
-|-------|-------------|
-| `matched` | Paired with random student |
-| `direct_matched` | Friend joined direct room |
-| `receive_message` | Incoming chat message |
-| `partner_skipped` | Partner left the chat |
-| `partner_disconnected` | Partner connection lost |
-| `online_users` | Updated online users list |
-
----
-
-## 📄 License
+## License
 
 MIT
-
----
-
-<p align="center">
-  Built with ☕ for LPU students
-</p>

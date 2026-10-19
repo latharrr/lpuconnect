@@ -246,6 +246,21 @@ A paper strip with six frames of CC0 campus photos, silver-toned to grayscale an
 ### Flash
 On every match, a full-screen warm white (#fffaf0) layer peaks at 8% of a 900ms ease-out, then fades. It is disabled under prefers-reduced-motion.
 
+### Onboarding and consent
+An enamel-plate dialog with three steps (booth rules, camera and mic explainer, consent). Consent uses square ink checkboxes (28px, 3px border) that invert to ink when ticked; the primary action stays red. Later sign-ups on the same device see only the consent step.
+
+### Chips
+Pill-shaped (18px radius, 36px tall) on booth-2 with a booth-line border. Selected chips fill with tungsten lamp and ink text. Used for interests and icebreaker prompts; the only rounded-pill element in the system.
+
+### Toasts and banners
+Toasts are paper slips at the bottom (ink text, lamp action button), stacked to three. The reconnecting banner is a full-width lamp strip above the chat header.
+
+### Settings rows
+Hairline-divided rows: title and one-line explanation on the left, control on the right (quiet button or a 64px switch that fills with lamp when on). Destructive actions use the danger button.
+
+### Legal pages
+Booth interior, 760px column, Big Shoulders title, Archivo body at 68ch. Tables collapse to stacked rows under 520px.
+
 ## Do's and Don'ts
 
 ### Do:
