@@ -2,11 +2,13 @@
 // Production and staging run side by side on one VPS with capped memory so they never
 // starve the other sites on the box.
 const common = {
-    script: 'server.js',
+    // Resolved against cwd (<release>/backend). server.js only self-starts when run
+    // directly, which pm2 fork mode never does, so pm2 goes through deploy/pm2-entry.mjs.
+    script: '../deploy/pm2-entry.mjs',
     exec_mode: 'fork',
     instances: 1,
     max_memory_restart: '400M',
-    node_args: '--max-old-space-size=384',
+    node_args: ['--max-old-space-size=384'],
     kill_timeout: 12000,          // graceful shutdown flushes events and closes sockets
     listen_timeout: 15000,
     restart_delay: 2000,
@@ -30,7 +32,7 @@ module.exports = {
             name: 'uniconnect-staging',
             cwd: '/srv/uniconnect-staging/current/backend',
             max_memory_restart: '250M',
-            node_args: '--max-old-space-size=224',
+            node_args: ['--max-old-space-size=224'],
             env: { NODE_ENV: 'production', ENV_FILE: '/etc/uniconnect/staging.env' },
             out_file: '/var/log/uniconnect/staging-out.log',
             error_file: '/var/log/uniconnect/staging-error.log',
