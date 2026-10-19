@@ -15,8 +15,10 @@ const env = process.env;
 const list = (v, fallback = []) => (v ? v.split(',').map(s => s.trim()).filter(Boolean) : fallback);
 const int = (v, fallback) => (v === undefined || v === '' ? fallback : Number.parseInt(v, 10));
 
-const isProd = env.NODE_ENV === 'production';
 const isTest = env.NODE_ENV === 'test';
+// Render sets RENDER=true on its services; treat that as production even without NODE_ENV.
+const isProd = env.NODE_ENV === 'production' || (env.RENDER === 'true' && !isTest);
+const PROD_ORIGINS = ['https://uniconnect.deepanshulathar.dev', 'https://lputv.deepanshulathar.dev', 'https://lputv.vercel.app', 'https://localhost', 'capacitor://localhost'];
 
 export const config = {
     root: ROOT,
@@ -24,7 +26,7 @@ export const config = {
     isTest,
     port: int(env.PORT, 3001),
     trustProxy: env.TRUST_PROXY === undefined ? (isProd ? 1 : false) : (/^\d+$/.test(env.TRUST_PROXY) ? int(env.TRUST_PROXY) : env.TRUST_PROXY === 'true'),
-    allowedOrigins: list(env.ALLOWED_ORIGINS, isProd ? [] : ['http://localhost:5173', 'http://localhost:4173', 'capacitor://localhost', 'https://localhost']),
+    allowedOrigins: list(env.ALLOWED_ORIGINS, isProd ? PROD_ORIGINS : ['http://localhost:5173', 'http://localhost:4173', 'capacitor://localhost', 'https://localhost']),
 
     dbPath: env.DB_PATH || path.join(ROOT, 'data', 'uniconnect.sqlite'),
     backupDir: env.BACKUP_DIR || path.join(ROOT, 'data', 'backups'),
@@ -83,8 +85,6 @@ export function assertConfig(c = config) {
     if (!c.isProd) return;
     const missing = [];
     if (c.allowedOrigins.length === 0) missing.push('ALLOWED_ORIGINS');
-    if (!c.deviceSalt) missing.push('DEVICE_SALT');
-    if (!c.analyticsSalt) missing.push('ANALYTICS_SALT');
     if (missing.length) {
         throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
     }

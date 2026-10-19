@@ -1,4 +1,5 @@
 import { get, run, all } from './db.js';
+import { randomBytes } from 'node:crypto';
 import { config } from './config.js';
 
 // Defaults come from env; admins can override at runtime (stored in `settings`).
@@ -31,4 +32,16 @@ export function allSettings() {
 export function audit(actor, action, target, details) {
     run('INSERT INTO audit_log (ts, actor, action, target, details) VALUES (?, ?, ?, ?, ?)',
         Date.now(), actor, action, target || null, details ? JSON.stringify(details) : null);
+}
+
+// Secrets that may be provided by env; otherwise generated once and kept in the database so
+// a zero-config deploy (e.g. Render without env vars) still starts with stable values.
+export function provisionSecret(name, current) {
+    if (current) return current;
+    const key = `secret:${name}`;
+    const row = get('SELECT value FROM settings WHERE key = ?', key);
+    if (row) return row.value;
+    const value = randomBytes(32).toString('hex');
+    run('INSERT INTO settings (key, value, updated_at, updated_by) VALUES (?, ?, ?, ?)', key, value, Date.now(), 'system');
+    return value;
 }

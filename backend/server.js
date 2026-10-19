@@ -8,11 +8,17 @@ import { setupRealtime, shutdownRealtime } from './src/realtime/index.js';
 import { startEventFlusher, stopEventFlusher } from './src/events.js';
 import { startJobs, stopJobs } from './src/jobs.js';
 import { initMonitoring, captureError } from './src/errors.js';
+import { provisionSecret } from './src/settings.js';
 
 export async function start({ port = config.port } = {}) {
     assertConfig();
     await initMonitoring();
     openDb();
+    if (!config.analyticsSalt || !config.deviceSalt) {
+        logger.warn('ANALYTICS_SALT / DEVICE_SALT not set; using values generated and stored in the database');
+        config.analyticsSalt = provisionSecret('analytics_salt', config.analyticsSalt);
+        config.deviceSalt = provisionSecret('device_salt', config.deviceSalt);
+    }
     const app = createApp();
     const server = createServer(app);
     setupRealtime(server);
