@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import en from '../i18n/en.js';
 import hi from '../i18n/hi.js';
 import { store } from './session.js';
@@ -14,6 +14,7 @@ function initialLang() {
 
 export function I18nProvider({ children }) {
     const [lang, setLangState] = useState(initialLang);
+    useEffect(() => { document.documentElement.lang = lang; }, [lang]);
     const setLang = useCallback((l) => {
         setLangState(l);
         store.set('uc_lang', l);

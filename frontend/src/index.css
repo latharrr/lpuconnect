@@ -141,6 +141,12 @@ a {
   line-height: 1.3;
 }
 
+/* Devanagari has no case; uppercase + tracking break its shaping in Chrome. */
+[lang="hi"] .label {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 .display {
   font-family: var(--font-display);
   font-weight: 800;
