@@ -1990,12 +1990,18 @@ a {
   gap: 8px;
 }
 
+.phone-row > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .phone-cta {
   width: 100%;
 }
 
 .phone-form {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: stretch;
 }
@@ -2013,7 +2019,7 @@ a {
 
 .phone-input,
 .code-input {
-  flex: 1;
+  flex: 1 1 140px;
   min-width: 0;
   height: 48px;
   padding: 0 16px;
@@ -2038,6 +2044,7 @@ a {
 }
 
 .btn-go-small {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2059,6 +2066,7 @@ a {
 }
 
 .phone-hint {
+  overflow-wrap: break-word;
   font-size: 13px;
   color: var(--ink-2);
   text-align: center;
