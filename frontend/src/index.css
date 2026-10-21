@@ -523,9 +523,9 @@ a {
   margin-bottom: 16px;
 }
 
-.gender legend {
+.gender .gender-label {
   color: var(--ink-2);
-  margin-bottom: 8px;
+  margin: 0 0 8px;
   white-space: nowrap;
 }
 

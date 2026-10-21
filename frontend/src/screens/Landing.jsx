@@ -136,8 +136,8 @@ export default function Landing({ config, onAuthed }) {
                             {t('landing.promise')} <strong>{t('landing.promiseStrong')}</strong>
                         </p>
 
-                        <fieldset className="gender">
-                            <legend className="label">{t('landing.iam')}</legend>
+                        <fieldset className="gender" aria-labelledby="gender-legend">
+                            <p className="label gender-label" id="gender-legend">{t('landing.iam')}</p>
                             <div className="push-row">
                                 {GENDERS.map(g => (
                                     <label className="push" key={g}>
