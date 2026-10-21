@@ -145,6 +145,7 @@ a {
 [lang="hi"] .label {
   text-transform: none;
   letter-spacing: normal;
+  font-family: "Noto Sans Devanagari", "Mangal", "Kohinoor Devanagari", var(--font-ui);
 }
 
 .display {
