@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">LpuTV</string>
     <string name="title_activity_main">LpuTV</string>
-    <string name="package_name">com.lpuconnect.app</string>
-    <string name="custom_url_scheme">com.lpuconnect.app</string>
+    <string name="package_name">com.lputv.app</string>
+    <string name="custom_url_scheme">com.lputv.app</string>
 </resources>

@@ -4,16 +4,16 @@
 #   deploy/deploy.sh [git-ref]            # production (default ref: origin/main)
 #   deploy/deploy.sh --staging [git-ref]  # staging
 #
-# Layout:  /srv/uniconnect/repo.git (bare mirror)  /srv/uniconnect/releases/<sha>  /srv/uniconnect/current -> releases/<sha>
+# Layout:  /srv/lputv/repo.git (bare mirror)  /srv/lputv/releases/<sha>  /srv/lputv/current -> releases/<sha>
 set -euo pipefail
 
-STAGE=production; APP=uniconnect; ROOT=${DEPLOY_ROOT:-/srv/uniconnect}; PORT=${DEPLOY_PORT:-3001}; ENV_FILE=${DEPLOY_ENV_FILE:-/etc/uniconnect/production.env}
+STAGE=production; APP=lputv; ROOT=${DEPLOY_ROOT:-/srv/lputv}; PORT=${DEPLOY_PORT:-3001}; ENV_FILE=${DEPLOY_ENV_FILE:-/etc/lputv/production.env}
 if [[ "${1:-}" == "--staging" ]]; then
-    shift; STAGE=staging; APP=uniconnect-staging; ROOT=${DEPLOY_ROOT:-/srv/uniconnect-staging}; PORT=${DEPLOY_PORT:-3101}; ENV_FILE=${DEPLOY_ENV_FILE:-/etc/uniconnect/staging.env}
+    shift; STAGE=staging; APP=lputv-staging; ROOT=${DEPLOY_ROOT:-/srv/lputv-staging}; PORT=${DEPLOY_PORT:-3101}; ENV_FILE=${DEPLOY_ENV_FILE:-/etc/lputv/staging.env}
 fi
 REF="${1:-origin/main}"
 GATE_PORT=${DEPLOY_GATE_PORT:-3199}
-REPO=${DEPLOY_REPO:-/srv/uniconnect/repo.git}
+REPO=${DEPLOY_REPO:-/srv/lputv/repo.git}
 log() { printf '[deploy %s] %s\n' "$STAGE" "$*"; }
 
 git --git-dir="$REPO" fetch --quiet --prune origin '+refs/heads/*:refs/remotes/origin/*'

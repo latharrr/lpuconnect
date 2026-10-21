@@ -1,5 +1,5 @@
 # crontab -e (as the deploy user). Times are server-local.
 # Off-site copy of the database every night (the app also keeps 14 local copies).
-15 1 * * *  cd /srv/uniconnect/current/backend && ENV_FILE=/etc/uniconnect/production.env BACKUP_REMOTE=gdrive:uniconnect-backups node scripts/backup.mjs >> /var/log/uniconnect/backup.log 2>&1
+15 1 * * *  cd /srv/lputv/current/backend && ENV_FILE=/etc/lputv/production.env BACKUP_REMOTE=gdrive:uniconnect-backups node scripts/backup.mjs >> /var/log/lputv/backup.log 2>&1
 # Monthly restore drill; non-zero exit is mailed by cron.
-0 3 1 * *   cd /srv/uniconnect/current/backend && ENV_FILE=/etc/uniconnect/production.env node scripts/restore-drill.mjs >> /var/log/uniconnect/restore-drill.log 2>&1
+0 3 1 * *   cd /srv/lputv/current/backend && ENV_FILE=/etc/lputv/production.env node scripts/restore-drill.mjs >> /var/log/lputv/restore-drill.log 2>&1

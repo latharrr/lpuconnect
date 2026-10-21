@@ -1,5 +1,5 @@
 # /etc/logrotate.d/uniconnect
-/var/log/uniconnect/*.log {
+/var/log/lputv/*.log {
     daily
     rotate 14
     maxsize 50M

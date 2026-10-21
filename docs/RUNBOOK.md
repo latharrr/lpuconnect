@@ -1,17 +1,17 @@
 # LpuTV runbook
 
-One page for when something is wrong. Commands assume the VPS layout in `deploy/` (pm2, nginx, `/srv/uniconnect`). On Render, use the dashboard equivalents noted in brackets.
+One page for when something is wrong. Commands assume the VPS layout in `deploy/` (pm2, nginx, `/srv/lputv`). On Render, use the dashboard equivalents noted in brackets.
 
 ## Where things are
 
 | Thing | Location |
 |---|---|
-| Frontend | Vercel project `lpuconnect`, live at https://lputv.vercel.app (deploys on push to `main`) |
+| Frontend | Vercel project `lputv`, live at https://lputv.vercel.app (deploys on push to `main`) |
 | API (today) | VPS: pm2 `uniconnect` behind nginx, https://api.lpu.picapool.tech (deploy: `deploy/deploy.sh`) |
 | API (target) | VPS: pm2 app `uniconnect` on :3001 behind nginx; staging `uniconnect-staging` on :3101 |
-| Config | `/etc/uniconnect/production.env` and `staging.env` (template: `backend/.env.example`) [Render: Environment tab] |
+| Config | `/etc/lputv/production.env` and `staging.env` (template: `backend/.env.example`) [Render: Environment tab] |
 | Database | `DB_PATH` (SQLite, WAL). Local backups in `BACKUP_DIR`, 14 kept, plus nightly off-site copy via rclone |
-| Logs | `/var/log/uniconnect/*.log` (JSON lines, rotated daily, 14 kept) [Render: Logs tab] |
+| Logs | `/var/log/lputv/*.log` (JSON lines, rotated daily, 14 kept) [Render: Logs tab] |
 | Admin | `https://<api-host>/admin` (Google sign-in, `ADMIN_EMAILS` allow-list) |
 | Health | `GET /health`: 200 with JSON when up, 503 when the database is unreachable |
 
@@ -45,8 +45,8 @@ The script builds the release, boots it on :3199 against a copy of the live data
 ## Roll back
 
 ```bash
-ls -1t /srv/uniconnect/releases            # newest first
-ln -sfn /srv/uniconnect/releases/<sha> /srv/uniconnect/current && pm2 reload uniconnect
+ls -1t /srv/lputv/releases            # newest first
+ln -sfn /srv/lputv/releases/<sha> /srv/lputv/current && pm2 reload uniconnect
 ```
 [Render: Events → pick the previous deploy → Rollback. Vercel: Deployments → previous → Promote.]
 
@@ -54,9 +54,9 @@ ln -sfn /srv/uniconnect/releases/<sha> /srv/uniconnect/current && pm2 reload uni
 
 ```bash
 pm2 stop uniconnect
-cp /var/lib/uniconnect/uniconnect.sqlite /var/lib/uniconnect/broken-$(date +%F).sqlite
-rm -f /var/lib/uniconnect/uniconnect.sqlite-wal /var/lib/uniconnect/uniconnect.sqlite-shm
-cp /var/lib/uniconnect/backups/<file>.sqlite /var/lib/uniconnect/uniconnect.sqlite   # or: rclone copy gdrive:uniconnect-backups/<file> .
+cp /var/lib/lputv/uniconnect.sqlite /var/lib/lputv/broken-$(date +%F).sqlite
+rm -f /var/lib/lputv/uniconnect.sqlite-wal /var/lib/lputv/uniconnect.sqlite-shm
+cp /var/lib/lputv/backups/<file>.sqlite /var/lib/lputv/uniconnect.sqlite   # or: rclone copy gdrive:uniconnect-backups/<file> .
 pm2 start uniconnect && node deploy/smoke.mjs http://127.0.0.1:3001
 ```
 Monthly drill (cron, see `deploy/crontab`): `node scripts/restore-drill.mjs` must print `RESTORE DRILL PASSED`.

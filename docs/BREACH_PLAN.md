@@ -5,7 +5,7 @@ Not legal advice. The DPDP Act 2023 and the DPDP Rules expect a breach to be rep
 ## First hour
 
 1. **Contain.** Rotate whatever leaked: `ANALYTICS_SALT`/`DEVICE_SALT` only if the database leaked with them; revoke all sessions (`DELETE FROM sessions;` then everyone logs in again); rotate `TURN_SECRET`, `VAPID_*`, Google OAuth client secret, Render/Vercel/GitHub tokens as relevant.
-2. **Preserve evidence.** Copy logs (`/var/log/uniconnect`), the current database and the latest backups somewhere read-only. Do not delete anything.
+2. **Preserve evidence.** Copy logs (`/var/log/lputv`), the current database and the latest backups somewhere read-only. Do not delete anything.
 3. **Write down** what happened, when it was discovered, by whom, and what data is involved (use `docs/DATA_INVENTORY.md`).
 
 ## Within 72 hours

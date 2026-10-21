@@ -1,4 +1,4 @@
-// pm2 process file. `pm2 start deploy/ecosystem.config.cjs` from /srv/uniconnect/current.
+// pm2 process file. `pm2 start deploy/ecosystem.config.cjs` from /srv/lputv/current.
 // Production and staging run side by side on one VPS with capped memory so they never
 // starve the other sites on the box.
 const common = {
@@ -21,21 +21,21 @@ module.exports = {
     apps: [
         {
             ...common,
-            name: 'uniconnect',
-            cwd: '/srv/uniconnect/current/backend',
-            env: { NODE_ENV: 'production', ENV_FILE: '/etc/uniconnect/production.env' },
-            out_file: '/var/log/uniconnect/out.log',
-            error_file: '/var/log/uniconnect/error.log',
+            name: 'lputv',
+            cwd: '/srv/lputv/current/backend',
+            env: { NODE_ENV: 'production', ENV_FILE: '/etc/lputv/production.env' },
+            out_file: '/var/log/lputv/out.log',
+            error_file: '/var/log/lputv/error.log',
         },
         {
             ...common,
-            name: 'uniconnect-staging',
-            cwd: '/srv/uniconnect-staging/current/backend',
+            name: 'lputv-staging',
+            cwd: '/srv/lputv-staging/current/backend',
             max_memory_restart: '250M',
             node_args: ['--max-old-space-size=224'],
-            env: { NODE_ENV: 'production', ENV_FILE: '/etc/uniconnect/staging.env' },
-            out_file: '/var/log/uniconnect/staging-out.log',
-            error_file: '/var/log/uniconnect/staging-error.log',
+            env: { NODE_ENV: 'production', ENV_FILE: '/etc/lputv/staging.env' },
+            out_file: '/var/log/lputv/staging-out.log',
+            error_file: '/var/log/lputv/staging-error.log',
         },
     ],
 };
