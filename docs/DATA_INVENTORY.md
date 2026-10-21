@@ -11,6 +11,8 @@ What LpuTV holds, why, where, and for how long. Keep this in sync with `/privacy
 | Blocks | `blocks` | Safety | Consent / legitimate safety | Until deletion | Nobody (enforced silently) |
 | Consent records (18+, terms, privacy) with version and time | `consents` | Proof of consent | Legal obligation | Until deletion | Admins |
 | Hashed device id | `users.device_hash`, `device_bans` | Ban evasion control | Legitimate safety | Until deletion / ban expiry | Nobody (hash only) |
+| Hashed phone number | `users.phone_hash` | Phone login via WhatsApp code | Consent | Until account deletion | Nobody (HMAC-SHA256 hash only; raw number never stored) |
+| One-time login codes | `otp_codes` | Phone login verification | Consent | 10-minute validity; rows purged after 7 days | Nobody (code and phone both stored as HMAC hashes) |
 | Session tokens (SHA-256 only) | `sessions` | Staying logged in | Contract | 7 days, purged hourly | Nobody |
 | Usage events with pseudonymous id (HMAC of public id), never email or text | `events` | Product analytics | Consent | 90 days raw, then `daily_stats` totals | Admins |
 | Daily totals | `daily_stats` | Dashboards | Consent | Indefinitely (aggregate, not personal) | Admins |

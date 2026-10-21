@@ -78,6 +78,25 @@ export const config = {
     },
 
     maxMemoryMb: int(env.MAX_MEMORY_MB, 400),
+
+    // WhatsApp OTP login. Disabled unless OTP_ENABLED=true; sender is pluggable
+    // ('dry' logs only, 'openwa' uses the Labs relay bridge, 'cloudapi' is the
+    // future official sender). Limits double as the unofficial-sender ban shield.
+    otp: {
+        enabled: env.OTP_ENABLED === 'true',
+        sender: env.OTP_SENDER || 'dry',
+        ttlMs: int(env.OTP_TTL_SECONDS, 600) * 1000,
+        codeAttempts: int(env.OTP_MAX_ATTEMPTS, 5),
+        perNumberPerDay: int(env.OTP_PER_NUMBER_PER_DAY, 3),
+        perIpPerHour: int(env.OTP_PER_IP_PER_HOUR, 10),
+        dailyCap: int(env.OTP_DAILY_CAP, 100),
+        minSendGapMs: int(env.OTP_MIN_SEND_GAP_MS, 10_000),
+        resendGapMs: int(env.OTP_RESEND_GAP_SECONDS, 60) * 1000,
+        hashSalt: env.OTP_HASH_SALT || env.DEVICE_SALT || (isProd ? '' : 'dev-otp-salt'),
+        openwaUrl: env.OPENWA_SEND_URL || 'http://127.0.0.1:8787/admin/send',
+        openwaSecret: env.OPENWA_SECRET || '',
+        testPhones: list(env.OTP_TEST_PHONES),
+    },
 };
 
 // Fail loudly on missing production config rather than running half-secured.
@@ -85,6 +104,8 @@ export function assertConfig(c = config) {
     if (!c.isProd) return;
     const missing = [];
     if (c.allowedOrigins.length === 0) missing.push('ALLOWED_ORIGINS');
+    if (c.otp.enabled && !c.otp.hashSalt) missing.push('OTP_HASH_SALT (or DEVICE_SALT)');
+    if (c.otp.enabled && c.otp.sender === 'openwa' && !c.otp.openwaSecret) missing.push('OPENWA_SECRET');
     if (missing.length) {
         throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
     }

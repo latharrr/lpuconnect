@@ -25,3 +25,7 @@ Not legal advice. The DPDP Act 2023 and the DPDP Rules expect a breach to be rep
 | Date | Incident | Status |
 |---|---|---|
 | 2026-10-19 | B7: `backend/uniconnect.sqlite` with 4 user records (emails incl. the owner's, names, genders, bios) and 2 friend rows was committed to the public GitHub repository. Purged from history and force-pushed on 2026-10-19. Treat as exposed. | Users to be notified (`docs/B7_NOTICE.md`); ask GitHub Support to purge cached views of old commits |
+
+## Phone-login data note
+
+Phone numbers are stored only as HMAC-SHA256 hashes (`users.phone_hash`, `otp_codes.phone_hash`); OTP codes are also HMAC-hashed. A database leak therefore does not expose raw phone numbers or usable codes, provided `OTP_HASH_SALT` stays secret. If `OTP_HASH_SALT` itself is compromised, rotate it (invalidates all hashes; phone-login users re-verify on next login) and treat the hashed numbers as breached personal data for notification purposes.

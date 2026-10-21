@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, LoaderCircle, Languages } from 'lucide-react';
+import { ArrowRight, LoaderCircle, Languages, Phone } from 'lucide-react';
 import SampleStrip from '../components/SampleStrip.jsx';
 import Onboarding from './Onboarding.jsx';
 import { api } from '../lib/api.js';
@@ -16,7 +16,13 @@ export default function Landing({ config, onAuthed }) {
     const [gender, setGender] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
-    const [pending, setPending] = useState(null); // { kind: 'guest' } | { kind: 'google', idToken }
+    const [pending, setPending] = useState(null); // { kind: 'guest' } | { kind: 'google', idToken } | { kind: 'otp' }
+    const [phoneOpen, setPhoneOpen] = useState(false);
+    const [phone, setPhone] = useState('');
+    const [otpSession, setOtpSession] = useState(null);
+    const [code, setCode] = useState('');
+    const [otpHint, setOtpHint] = useState('');
+    const consentRef = useRef(null);
     const googleRef = useRef(null);
     const genderRef = useRef(gender);
     genderRef.current = gender;
@@ -42,6 +48,11 @@ export default function Landing({ config, onAuthed }) {
         setLoading(true);
         const common = { gender, consent, deviceId: deviceId(), ref: getRef(), appVersion: APP_VERSION };
         try {
+            if (req.kind === 'otp') {
+                consentRef.current = consent;
+                await requestCode();
+                return;
+            }
             const data = req.kind === 'google'
                 ? await api('/api/auth/google', { method: 'POST', auth: false, body: { ...common, idToken: req.idToken } })
                 : await api('/api/auth/guest', { method: 'POST', auth: false, body: common });
@@ -50,6 +61,57 @@ export default function Landing({ config, onAuthed }) {
             setError(err.message);
             setLoading(false);
         }
+    }
+
+    function validPhone() {
+        const d = phone.replace(/[^\d]/g, '').replace(/^0/, '');
+        return /^[6-9]\d{9}$/.test(d.startsWith('91') && d.length === 12 ? d.slice(2) : d);
+    }
+
+    function startPhone() {
+        if (!gender) { setError(t('landing.pickGender')); return; }
+        if (!validPhone()) { setError(t('landing.badPhone')); return; }
+        setError('');
+        if (consentRef.current) { requestCode(); return; }
+        begin({ kind: 'otp' });
+    }
+
+    async function requestCode() {
+        setLoading(true);
+        setError('');
+        try {
+            const data = await api('/api/auth/otp/request', { method: 'POST', auth: false, body: { phone } });
+            setOtpSession(data.session);
+            setCode('');
+            setOtpHint(t('landing.codeSent'));
+        } catch (err) {
+            setError(err.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function verifyCode(e) {
+        e.preventDefault();
+        if (!/^\d{6}$/.test(code)) { setError(t('landing.badCode')); return; }
+        setLoading(true);
+        setError('');
+        try {
+            const data = await api('/api/auth/otp/verify', {
+                method: 'POST', auth: false,
+                body: { phone, session: otpSession, code, gender, consent: consentRef.current, deviceId: deviceId(), ref: getRef(), appVersion: APP_VERSION },
+            });
+            onAuthed(data);
+        } catch (err) {
+            setError(err.message);
+            setLoading(false);
+        }
+    }
+
+    function changeNumber() {
+        setOtpSession(null);
+        setCode('');
+        setOtpHint('');
     }
 
     function stepIn(e) {
@@ -92,6 +154,63 @@ export default function Landing({ config, onAuthed }) {
                         <button type="submit" className="btn-go" disabled={loading}>
                             {loading ? <><LoaderCircle className="spin" /> {t('landing.opening')}</> : <>{t('landing.stepIn')} <ArrowRight /></>}
                         </button>
+
+                        {config?.otpEnabled && (
+                            <div className="phone-row">
+                                {!phoneOpen ? (
+                                    <button type="button" className="btn btn-quiet phone-cta" onClick={() => setPhoneOpen(true)} disabled={loading}>
+                                        <Phone aria-hidden="true" /> {t('landing.phoneCta')}
+                                    </button>
+                                ) : !otpSession ? (
+                                    <>
+                                        <div className="phone-form">
+                                            <span className="phone-prefix">+91</span>
+                                            <input
+                                                className="phone-input"
+                                                type="tel"
+                                                inputMode="numeric"
+                                                autoComplete="tel-national"
+                                                maxLength={12}
+                                                placeholder={t('landing.phonePlaceholder')}
+                                                value={phone}
+                                                onChange={e => { setPhone(e.target.value); setError(''); }}
+                                                aria-label={t('landing.phonePlaceholder')}
+                                            />
+                                            <button type="button" className="btn btn-go-small" onClick={startPhone} disabled={loading}>
+                                                {loading ? t('landing.sending') : t('landing.getCode')}
+                                            </button>
+                                        </div>
+                                        <p className="phone-hint">{t('landing.phoneHint')}</p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div className="phone-form">
+                                            <input
+                                                className="code-input"
+                                                type="text"
+                                                inputMode="numeric"
+                                                autoComplete="one-time-code"
+                                                maxLength={6}
+                                                placeholder={t('landing.codePlaceholder')}
+                                                value={code}
+                                                onChange={e => { setCode(e.target.value.replace(/[^\d]/g, '')); setError(''); }}
+                                                aria-label={t('landing.codePlaceholder')}
+                                                autoFocus
+                                            />
+                                            <button type="button" className="btn btn-go-small" onClick={verifyCode} disabled={loading}>
+                                                {loading ? <LoaderCircle className="spin" /> : t('landing.verify')}
+                                            </button>
+                                        </div>
+                                        <p className="phone-hint" role="status">{otpHint}</p>
+                                        <p className="phone-hint">
+                                            <button type="button" className="link-btn" onClick={requestCode} disabled={loading}>{t('landing.resend')}</button>
+                                            {' · '}
+                                            <button type="button" className="link-btn" onClick={changeNumber} disabled={loading}>{t('landing.changeNumber')}</button>
+                                        </p>
+                                    </>
+                                )}
+                            </div>
+                        )}
 
                         {config?.googleClientId && (
                             <div className="google-row">

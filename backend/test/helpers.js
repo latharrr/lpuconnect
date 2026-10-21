@@ -10,6 +10,9 @@ process.env.ADMIN_DEV_TOKEN ??= 'test-admin';
 process.env.BACKUP_DIR ??= fs.mkdtempSync(path.join(os.tmpdir(), 'uc-backup-'));
 process.env.ANALYTICS_SALT ??= 'test-salt';
 process.env.DEVICE_SALT ??= 'test-device-salt';
+process.env.OTP_ENABLED ??= 'true';
+process.env.OTP_SENDER ??= 'dry';
+process.env.OTP_MIN_SEND_GAP_MS ??= '0';
 
 const { start, stop } = await import('../server.js');
 const { io: ioc } = await import('socket.io-client');

@@ -19,12 +19,13 @@ Designed, built and operated solo by Deepanshu Lathar: product, frontend, backen
 - **Frontend:** React 19 + Vite, PWA with service worker, Socket.IO client, Hindi + English i18n, Capacitor Android wrapper. Deployed on Vercel.
 - **Backend:** Node 22, Express 5, Socket.IO, SQLite via `node:sqlite` (WAL, versioned migrations), Google Sign-In (ID-token flow, no client secret), web-push notifications.
 - **Infrastructure:** single Oracle Cloud VPS, pm2 with gated zero-downtime deploys and automatic rollback, nginx + TLS, self-hosted coturn for WebRTC NAT traversal, nightly SQLite backups shipped to Google Drive via rclone, Sentry error monitoring, daily digest alerts.
-- **Quality:** 39 backend tests (~84% line coverage), Playwright end-to-end tests that run the full flow in two browsers with fake camera and mic, CI on every push (backend tests, frontend build, e2e, npm audit, gitleaks).
+- **Quality:** 47 backend tests (~84% line coverage), Playwright end-to-end tests that run the full flow in two browsers with fake camera and mic, CI on every push (backend tests, frontend build, e2e, npm audit, gitleaks).
 
 ## Hard problems solved
 
 - **10,000 concurrent chatters on the live VPS, zero failures.** Measured on production hardware (2 vCPU, 12 GB, shared box): every stage matched 100% up to 10,000 users; p95 match time stays under the 5 s target through 8,000 users with server CPU at ~45% of one core and RSS at 555 MB. Full report in [docs/LOADTEST.md](docs/LOADTEST.md).
 - **Zero-downtime deploys with automatic rollback.** `deploy/deploy.sh` starts the new release on a spare port, smoke-tests it behind nginx, flips traffic only when it passes, and rolls back on failure. A parallel staging app on port 3101 gets the same pipeline.
+- **Phone login without storing phone numbers.** Optional WhatsApp OTP sign-in: numbers and codes are HMAC-hashed at rest, codes expire in 10 minutes, and a layered rate limit plus kill switch protects the sender. Pluggable sender interface, ready for the official WhatsApp Cloud API.
 - **Anonymous by default, provably.** Strangers see only random aliases; the server relays text without storing it; video is peer-to-peer WebRTC with coturn as fallback. The test suite scans the database to prove no messages persist.
 - **Mutual consent enforced server-side.** Enjoy, extend, friend, video and name-reveal each require both sides; every socket event re-checks room membership and consent state, so no client can skip a step.
 - **Safety without moderators.** A report ends the chat and blocks the pair; repeated distinct reports suspend the account automatically; device-level bans stop instant re-registration; every admin action lands in an append-only audit log.

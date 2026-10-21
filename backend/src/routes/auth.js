@@ -6,6 +6,7 @@ import { createSession, rotateSession, revokeSession, bearer, validateSession, s
 import { getUser, invalidateUser, selfView, friendsOf, banState, deviceBanned } from '../users.js';
 import { track } from '../events.js';
 import { HttpError } from '../errors.js';
+import { requestOtp, verifyOtp, phoneHash, normalizePhone } from '../otp.js';
 import { randomHandle, deviceHash, now, clampText } from '../util.js';
 
 export const TERMS_VERSION = '2026-10-19';
@@ -113,6 +114,53 @@ authRouter.post('/google', async (req, res) => {
     const ban = banState(getUser(email));
     if (ban) throw new HttpError(403, 'banned', `Suspended until ${ban.until}`);
     track('google_login', { email, props: { verified }, appVersion });
+    respond(res, email, { token: createSession(email) });
+});
+
+
+// --- WhatsApp OTP login ------------------------------------------------------
+
+authRouter.post('/otp/request', async (req, res) => {
+    const { phone } = req.body || {};
+    const ip = req.ip || req.socket?.remoteAddress || '';
+    const result = await requestOtp({ phone, ip });
+    res.json(result);
+});
+
+authRouter.post('/otp/verify', (req, res) => {
+    const { phone, session, code, gender, deviceId, appVersion } = req.body || {};
+    // Validate signup requirements before consuming the code: a failed consent
+    // check must not burn the OTP or an attempt.
+    const probePhone = phoneHash(normalizePhone(phone) || '');
+    const existing = probePhone ? get('SELECT * FROM users WHERE phone_hash = ?', probePhone) : null;
+    const dh = deviceHash(deviceId);
+    if (!existing) {
+        if (!GENDERS.has(gender)) throw new HttpError(400, 'bad_gender');
+        readConsent(req.body);
+        if (deviceBanned(dh)) throw new HttpError(403, 'banned');
+    }
+    const verifiedPhone = verifyOtp({ phone, sessionId: session, code });
+    const ph = phoneHash(verifiedPhone);
+    let email;
+    if (!existing) {
+        const handle = randomHandle(12);
+        email = `wa_${handle}@uniconnect.local`;
+        tx(() => {
+            run(`INSERT INTO users (id, email, name, gender, public_id, auth_provider, device_hash, ref, phone_hash, last_seen)
+                 VALUES (?, ?, ?, ?, lower(hex(randomblob(12))), 'whatsapp', ?, ?, ?, ?)`,
+                email, email, `Guest-${handle.slice(0, 6)}`, gender, dh, refOf(req.body), ph, new Date().toISOString());
+            recordConsent(email);
+        });
+        track('consent_given', { email });
+    } else {
+        email = existing.email;
+        run('UPDATE users SET device_hash = COALESCE(?, device_hash), last_seen = ? WHERE email = ?', dh, new Date().toISOString(), email);
+        if (!existing.consent_at) { readConsent(req.body); recordConsent(email); }
+    }
+    invalidateUser(email);
+    const ban = banState(getUser(email));
+    if (ban) throw new HttpError(403, 'banned', `Suspended until ${ban.until}`);
+    track('otp_login', { email, appVersion });
     respond(res, email, { token: createSession(email) });
 });
 

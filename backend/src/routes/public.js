@@ -23,6 +23,7 @@ publicRouter.get('/config', (_req, res) => {
         nameMax: NAME_MAX,
         chatMinutes: 10,
         videoUnlockSeconds: 30,
+        otpEnabled: config.otp.enabled,
     });
 });
 

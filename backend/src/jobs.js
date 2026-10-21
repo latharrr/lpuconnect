@@ -5,6 +5,7 @@ import { config } from './config.js';
 import { run, get, all, backupTo } from './db.js';
 import { purgeExpiredSessions } from './sessions.js';
 import { purgeNotifyLog } from './push.js';
+import { purgeOldOtpCodes } from './otp.js';
 import { flush } from './events.js';
 import { logger } from './logger.js';
 import { sendAlert } from './alerts.js';
@@ -62,6 +63,7 @@ export function purgeRetention(t = Date.now()) {
         events: run('DELETE FROM events WHERE ts < ?', t - r.eventsDays * DAY).changes,
         reports: run("DELETE FROM reports WHERE ts < ? AND status != 'open'", t - r.reportsDays * DAY).changes,
         sessions: purgeExpiredSessions(),
+        otp: purgeOldOtpCodes(),
         notify: purgeNotifyLog(),
     };
     logger.info({ counts }, 'retention purge');

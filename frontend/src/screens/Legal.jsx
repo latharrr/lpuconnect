@@ -25,6 +25,7 @@ const PAGES = {
                     <tbody>
                         <tr><td>Random guest handle, the gender you choose, optional bio and interests</td><td>To run your account and matching</td><td>Until you delete your account</td></tr>
                         <tr><td>Google email and name (only if you sign in with Google)</td><td>To log you in and show a verified badge for college domains</td><td>Until you delete your account</td></tr>
+                        <tr><td>Phone number as a one-way hash (only if you sign in with phone)</td><td>To log you in with a code we send on WhatsApp; the raw number is never saved and never shown to anyone</td><td>Until you delete your account</td></tr>
                         <tr><td>Friends list and who you blocked</td><td>Direct chats, and keeping blocked people away from you</td><td>Until you delete your account</td></tr>
                         <tr><td>Consent records (18+, terms, this notice) with a timestamp</td><td>Proof of consent</td><td>Until you delete your account</td></tr>
                         <tr><td>A hashed device identifier</td><td>Stopping banned users from coming back</td><td>Until you delete your account</td></tr>
@@ -34,7 +35,7 @@ const PAGES = {
                     </tbody>
                 </table>
                 <h2>What we never store</h2>
-                <p>The text of your messages and your audio or video. Messages pass through our server to the other person and are not saved. Video and audio go directly between the two devices.</p>
+                <p>The text of your messages and your audio or video. Messages pass through our server to the other person and are not saved. Video and audio go directly between the two devices. Your raw phone number: only a one-way hash is kept, and WhatsApp login codes are deleted within 7 days.</p>
                 <h2>Your rights</h2>
                 <ul>
                     <li>Download everything we hold about you: Dashboard, Settings, "Download my data".</li>
