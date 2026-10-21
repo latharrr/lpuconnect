@@ -54,8 +54,31 @@ Frontend: `frontend/.env.example` (`VITE_BACKEND_URL`, optional `VITE_SENTRY_DSN
 
 ## Deploy
 
-- **Today:** push to `main`. Vercel builds `frontend/`; Render builds `backend/` (turn on Auto-Deploy in Render settings). Render free sleeps when idle and wipes the database on every deploy.
-- **Target:** a VPS with persistent disk. Follow `docs/RUNBOOK.md` and `deploy/`. `deploy/deploy.sh --staging` then `deploy/deploy.sh`.
+- **Frontend:** push to `main`; Vercel builds and serves https://lputv.vercel.app.
+- **Backend:** runs on an Oracle Cloud VPS under pm2 (app `uniconnect`, Node 22, port 3001, behind nginx at https://api.lpu.picapool.tech). `deploy/deploy.sh` fetches `main`, installs, gates the new release on a spare port with a smoke test, then reloads pm2 and auto-rolls back on failure. `deploy/deploy.sh --staging` deploys to a parallel staging app on port 3101. Layout: `/srv/uniconnect` (bare mirror, working clone, `releases/<sha>`, `current` symlink). See `docs/RUNBOOK.md`.
+- **Video:** coturn on the same host (`turn.lpu.picapool.tech`, UDP/TCP 3478, TLS 5349); the app advertises it via `TURN_URLS`.
+
+### Production configuration
+
+Backend env lives in `/etc/uniconnect/production.env` (loaded via `ENV_FILE`; never committed). Names only - see `backend/.env.example` for the full list and meanings: `GOOGLE_CLIENT_ID`, `ADMIN_EMAILS`, `ALLOWED_ORIGINS`, `DB_PATH`, `TURN_URLS`/`TURN_SECRET`, `VAPID_*`, `ALERT_WEBHOOK_URL`, `SENTRY_DSN`, `GROQ_API_KEY`, `ANALYTICS_SALT`, `DEVICE_SALT`, `BACKUP_DIR`, `BACKUP_REMOTE`.
+
+### Backups
+
+Nightly at 01:15 UTC (user crontab): `scripts/backup.mjs` snapshots the SQLite database, keeps the last 9 locally under `/srv/uniconnect/data/backups/`, and ships a copy to Google Drive via rclone (`gdrive:uniconnect-backups`). Backup config is in `deploy/crontab.txt`.
+
+### Monitoring
+
+- `GET /health` on the API returns release, uptime, memory, queue and cache stats.
+- Sentry (`SENTRY_DSN`, org `lputv`, project `lputv-backend`) captures unexpected server errors; init is in `backend/src/errors.js` and is a no-op when the DSN is unset.
+- Daily digest + spike alerts go to `ALERT_WEBHOOK_URL`.
+
+### Admin panel
+
+`https://api.lpu.picapool.tech/admin` - sign in with Google; only emails in `ADMIN_EMAILS` get in. All admin actions land in an append-only audit log.
+
+### Legal
+
+In-app pages: Privacy, Terms and Rules (`frontend/src/screens/Legal.jsx`). The grievance contact shown there is set with `VITE_GRIEVANCE_NAME` / `VITE_GRIEVANCE_EMAIL`. Data export and account deletion are self-serve in Settings.
 
 ## License
 
