@@ -974,6 +974,22 @@ a {
   padding-bottom: 2px;
 }
 
+.rename-btn {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 10px;
+  padding: 6px;
+  border: none;
+  background: none;
+  color: inherit;
+  opacity: 0.55;
+  cursor: pointer;
+}
+.rename-btn:hover, .rename-btn:focus-visible { opacity: 1; }
+.rename-btn svg { width: 0.45em; height: 0.45em; }
+.rename-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.rename-row input { flex: 1; min-width: 140px; }
+
 .me-meta {
   display: flex;
   align-items: center;

@@ -104,8 +104,9 @@ authRouter.post('/google', async (req, res) => {
         });
     } else {
         // Gender is a self-described preference set once; it is not overwritten on later logins.
-        run('UPDATE users SET name = ?, verified = ?, auth_provider = ?, device_hash = COALESCE(?, device_hash), last_seen = ? WHERE email = ?',
-            clampText(payload.name || existing.name, 60), verified, 'google', dh, new Date().toISOString(), email);
+        // Name is set at signup and editable by the user; a Google login must not overwrite it.
+        run('UPDATE users SET verified = ?, auth_provider = ?, device_hash = COALESCE(?, device_hash), last_seen = ? WHERE email = ?',
+            verified, 'google', dh, new Date().toISOString(), email);
         if (!existing.consent_at) { readConsent(req.body); recordConsent(email); }
     }
     invalidateUser(email);

@@ -9,6 +9,7 @@ import { analyticsId, clampText, now } from '../util.js';
 import { kickUser, notifyFriendsChanged } from '../realtime/index.js';
 
 export const BIO_MAX = 200;
+export const NAME_MAX = 60;
 export const INTERESTS = ['Coding', 'Music', 'Movies', 'Sports', 'Gaming', 'Books', 'Art', 'Fitness', 'Food', 'Travel', 'Startups', 'Anime', 'Memes', 'Placements', 'Exams'];
 
 export const meRouter = Router();
@@ -18,7 +19,17 @@ meRouter.get('/', requireAuth(), (req, res) => {
 });
 
 meRouter.patch('/', requireAuth(), (req, res) => {
-    const { bio, interests } = req.body || {};
+    const { bio, interests, name } = req.body || {};
+    if (name !== undefined) {
+        if (typeof name !== 'string') throw new HttpError(400, 'bad_name');
+        const clean = clampText(name, NAME_MAX);
+        if (!clean) throw new HttpError(400, 'bad_name');
+        if (clean !== getUser(req.email).name) {
+            run('UPDATE users SET name = ? WHERE email = ?', clean, req.email);
+            // Friends see names live; push a refresh so open friend lists pick up the new name.
+            all('SELECT user_id_2 AS e FROM friends WHERE user_id_1 = ?', req.email).forEach(r => notifyFriendsChanged(r.e));
+        }
+    }
     if (bio !== undefined) {
         if (typeof bio !== 'string') throw new HttpError(400, 'bad_bio');
         run('UPDATE users SET bio = ? WHERE email = ?', clampText(bio, BIO_MAX), req.email);

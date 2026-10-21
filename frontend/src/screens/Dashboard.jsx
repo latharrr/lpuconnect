@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, LogOut, BadgeCheck, Share2 } from 'lucide-react';
+import { ArrowRight, LogOut, BadgeCheck, Share2, Pencil } from 'lucide-react';
 import Print from '../components/Print.jsx';
 import Wordmark from '../components/Wordmark.jsx';
 import FriendList from './FriendList.jsx';
@@ -15,6 +15,9 @@ export default function Dashboard({ user, friends, onlineIds, config, onUser, on
     const [bio, setBio] = useState(user.bio || '');
     const [bioState, setBioState] = useState('');
     const [interests, setInterests] = useState(user.interests || []);
+    const [renaming, setRenaming] = useState(false);
+    const [nameVal, setNameVal] = useState(user.name);
+    const [nameState, setNameState] = useState('');
 
     async function saveBio() {
         if (bio === (user.bio || '')) return;
@@ -25,6 +28,21 @@ export default function Dashboard({ user, friends, onlineIds, config, onUser, on
             setBioState('saved');
         } catch (err) {
             setBioState('');
+            toast(err.message);
+        }
+    }
+
+    async function saveName() {
+        const v = nameVal.trim();
+        if (!v || v === user.name) { setRenaming(false); setNameVal(user.name); return; }
+        setNameState('saving');
+        try {
+            const r = await api('/api/me', { method: 'PATCH', body: { name: v } });
+            onUser(r.user);
+            setNameState('');
+            setRenaming(false);
+        } catch (err) {
+            setNameState('');
             toast(err.message);
         }
     }
@@ -57,7 +75,20 @@ export default function Dashboard({ user, friends, onlineIds, config, onUser, on
                         <div className="me">
                             <Print name={user.name} size={96} />
                             <div style={{ minWidth: 0 }}>
-                                <h1 className="display me-name">{user.name}</h1>
+                                {renaming ? (
+                                    <div className="rename-row">
+                                        <input value={nameVal} maxLength={config?.nameMax || 60} autoFocus
+                                            aria-label={t('dash.rename')}
+                                            onChange={e => setNameVal(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') { setRenaming(false); setNameVal(user.name); } }} />
+                                        <button className="btn btn-ghost" onClick={saveName} disabled={nameState === 'saving'}>{nameState === 'saving' ? t('dash.saving') : t('dash.nameSave')}</button>
+                                        <button className="btn btn-ghost" onClick={() => { setRenaming(false); setNameVal(user.name); }}>{t('dash.nameCancel')}</button>
+                                    </div>
+                                ) : (
+                                    <h1 className="display me-name">{user.name}
+                                        <button className="rename-btn" onClick={() => { setNameVal(user.name); setRenaming(true); }} aria-label={t('dash.rename')} title={t('dash.rename')}><Pencil /></button>
+                                    </h1>
+                                )}
                                 <div className="me-meta label">
                                     <span>{t(`gender.${user.gender}`)}</span>
                                     {user.verified && <span className="verified"><BadgeCheck aria-hidden="true" /> {t('dash.verified')}</span>}

@@ -6,7 +6,7 @@ import { track, CLIENT_EVENTS, bufferedCount, eventStats } from '../events.js';
 import { validateSession, bearer } from '../sessions.js';
 import { getUser, userCache, friendCache } from '../users.js';
 import { requireAuth } from './auth.js';
-import { INTERESTS, BIO_MAX } from './me.js';
+import { INTERESTS, BIO_MAX, NAME_MAX } from './me.js';
 import { liveStats } from '../realtime/index.js';
 import { lagMs } from '../health.js';
 import { HttpError } from '../errors.js';
@@ -20,6 +20,7 @@ publicRouter.get('/config', (_req, res) => {
         vapidPublicKey: config.vapidPublic || null,
         interests: INTERESTS,
         bioMax: BIO_MAX,
+        nameMax: NAME_MAX,
         chatMinutes: 10,
         videoUnlockSeconds: 30,
     });
