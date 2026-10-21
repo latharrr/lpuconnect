@@ -1,0 +1,83 @@
+{
+  "at": "2026-10-21T06:37:12.880Z",
+  "url": "local child process",
+  "node": "v22.23.3",
+  "results": [
+    {
+      "users": 20000,
+      "loggedIn": 20000,
+      "connected": 20000,
+      "matched": 20000,
+      "failed": 0,
+      "matchMs": {
+        "p50": 3596,
+        "p95": 7644,
+        "max": 7798
+      },
+      "messagesDelivered": 189774,
+      "server": {
+        "peakCpuPct": 97,
+        "peakRssMb": 890,
+        "peakHeapMb": 650,
+        "peakLoopLagMs": 49
+      }
+    },
+    {
+      "users": 30000,
+      "loggedIn": 30000,
+      "connected": 30000,
+      "matched": 30000,
+      "failed": 0,
+      "matchMs": {
+        "p50": 5217,
+        "p95": 10471,
+        "max": 10706
+      },
+      "messagesDelivered": 293835,
+      "server": {
+        "peakCpuPct": 96.7,
+        "peakRssMb": 1315,
+        "peakHeapMb": 923,
+        "peakLoopLagMs": 54
+      }
+    },
+    {
+      "users": 40000,
+      "loggedIn": 40000,
+      "connected": 40000,
+      "matched": 40000,
+      "failed": 0,
+      "matchMs": {
+        "p50": 7122,
+        "p95": 16127,
+        "max": 16434
+      },
+      "messagesDelivered": 384541,
+      "server": {
+        "peakCpuPct": 97.1,
+        "peakRssMb": 1687,
+        "peakHeapMb": 1023,
+        "peakLoopLagMs": 57
+      }
+    },
+    {
+      "users": 60000,
+      "loggedIn": 60000,
+      "connected": 60000,
+      "matched": 60000,
+      "failed": 3446,
+      "matchMs": {
+        "p50": 10735,
+        "p95": 25613,
+        "max": 26123
+      },
+      "messagesDelivered": 533388,
+      "server": {
+        "peakCpuPct": 98,
+        "peakRssMb": 1977,
+        "peakHeapMb": 1408,
+        "peakLoopLagMs": 13338
+      }
+    }
+  ]
+}

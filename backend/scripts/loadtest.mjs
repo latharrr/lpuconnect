@@ -49,14 +49,20 @@ async function pool(n, limit, fn) {
 }
 
 async function stage(n) {
-    const tokens = await pool(n, 40, async () => {
-        const r = await fetch(`${BASE}/api/auth/guest`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    // Spread loopback clients over 127.0.0.1-8: one (srcIP,srcPort,dstIP,dstPort)
+    // tuple per connection, so >64k concurrent sockets do not exhaust one
+    // ephemeral port range (single-IP testing caps at ~28k conns).
+    const bases = BASE === "http://127.0.0.1:3999"
+        ? Array.from({ length: 8 }, (_, i) => `http://127.0.0.${i + 1}:3999`)
+        : [BASE];
+    const tokens = await pool(n, 40, async (k) => {
+        const r = await fetch(`${bases[k % bases.length]}/api/auth/guest`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ gender: 'Other', consent: { age18: true, terms: true } }) });
         return r.ok ? (await r.json()).token : null;
     });
     const valid = tokens.filter(Boolean);
     const sockets = await pool(valid.length, 100, (k) => new Promise((resolve) => {
-        const s = io(BASE, { auth: { token: valid[k] }, transports: ['websocket'], reconnection: false, forceNew: true });
+        const s = io(bases[k % bases.length], { auth: { token: valid[k] }, transports: ['websocket'], reconnection: false, forceNew: true });
         s.once('connect', () => resolve(s));
         s.once('connect_error', () => resolve(null));
     }));

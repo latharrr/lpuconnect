@@ -55,3 +55,22 @@ Raw results: `docs/loadtest-vps-results.json` (per-stage files merged from /tmp 
 **Nothing broke first.** No config change was needed on the server: pm2 already runs it with a 1,048,576 file-descriptor limit and SQLite WAL absorbs the write load. (The client harness needed `ulimit -n 65536`.)
 
 **Production note:** real traffic goes through nginx and shares this VPS with other services, so plan operationally for a few thousand concurrent, with 8,000 as the measured spec-compliant ceiling and 10,000 as the failure-free maximum. Beyond that, stage 4 of the spec: Redis adapter, multiple processes, Postgres.
+
+## VPS 20k-60k step test (spawned test server), 2026-10-21
+
+Same script and workload, server spawned by the harness itself (NODE_ENV=test, in-memory DB, port 3999, release d06b3ce) on the live VPS, clients on the same machine. To pass ~64k loopback connections the harness now spreads clients over 127.0.0.1-8 (one ephemeral port range per source IP); before this fix the 20,000 stage died instantly with EADDRNOTAVAIL. `net.ipv4.ip_local_port_range` was widened to 10240-65535 during the run and restored after. Production was untouched (users count 6 before and after).
+
+| Concurrent users | Matched | Timed out (>20s) | p50 match (ms) | p95 match (ms) | Peak server CPU (1 core) | Peak server RSS (MB) | Peak event-loop lag (ms) |
+|---|---|---|---|---|---|---|---|
+| 20000 | 20000 | 0 | 3596 | 7644 | 97% | 890 | 49 |
+| 30000 | 30000 | 0 | 5217 | 10471 | 96.7% | 1315 | 54 |
+| 40000 | 40000 | 0 | 7122 | 16127 | 97.1% | 1687 | 57 |
+| 60000 | 60000 | 3446 (5.7%) | 10735 | 25613 | 98% | 1977 | 13338 |
+
+Raw results: `docs/loadtest-vps-60k-results.json`.
+
+**What breaks first: the single-threaded event loop.** The server process pins one core (~97%) from 20,000 users up; match latency and event-loop lag grow with it, and at 60,000 the loop lag hits 13 s and 5.7% of clients exceed the 20 s match timeout (they do match eventually - "matched" counts every socket that ever matched, "timed out" counts those past the client timeout). RAM (2 GB at 60,000), file descriptors and SQLite were never close to their limits. No crash, no error, production unaffected.
+
+**Harness note:** the client harness ran on the same box on the second core (80-90% CPU). Because the server core is saturated at every stage here, the server - not harness contention - is the measured bottleneck above ~20k; at lower stages (the 10k table above, server at 46%) on-box contention can inflate p95. An off-box harness isolates this: it needs ingress to the test port restricted to the client IP (or an SSH tunnel), Node 22+, `ulimit -n 65536+`, and either multiple client machines or client-side IP aliasing past ~64k sockets (one ephemeral range per source IP).
+
+**Using all cores for the server itself** needs stage 4 of the spec (Redis adapter + multiple processes); the app is single-process by design today.
