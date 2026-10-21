@@ -520,6 +520,7 @@ a {
 .gender legend {
   color: var(--ink-2);
   margin-bottom: 8px;
+  white-space: nowrap;
 }
 
 .push-row {
