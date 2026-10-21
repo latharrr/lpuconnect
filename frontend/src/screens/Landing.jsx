@@ -68,7 +68,7 @@ export default function Landing({ config, onAuthed }) {
                     <form className="plate landing-plate" onSubmit={stepIn}>
                         <span className="lamp lamp-pulse plate-lamp" aria-hidden="true" />
 
-                        <h1 className="display landing-title">Uni<em>connect</em></h1>
+                        <h1 className="display landing-title">Lpu<em>TV</em></h1>
 
                         <p className="landing-promise">
                             {t('landing.promise')} <strong>{t('landing.promiseStrong')}</strong>
