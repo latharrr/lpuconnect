@@ -1,8 +1,61 @@
 # LpuTV
 
-A photo booth for conversation. Two university students are paired at random for a ten-minute anonymous chat, with optional video. If both tap "Enjoying this" they can add each other, and names are revealed only when both accept.
+**Talk to a random student for ten minutes. Nobody sees who you are until you both say yes.**
 
-**Live:** https://lputv.vercel.app · **API:** https://api.lpu.picapool.tech (`/health`, `/admin`)
+LpuTV is an anonymous-first chat booth for university students: two people are paired at random for a ten-minute text chat, video unlocks if both want it, and names are revealed only after both sides accept a friend request.
+
+**Live:** https://lputv.vercel.app
+
+Designed, built and operated solo by Deepanshu Lathar: product, frontend, backend, realtime infrastructure, deployment and monitoring.
+
+## Screenshots
+
+| Landing | Dashboard | A chat |
+|---|---|---|
+| ![Landing](docs/screenshots/landing.png) | ![Dashboard](docs/screenshots/dashboard.png) | ![Chat](docs/screenshots/chat.png) |
+
+## Tech stack
+
+- **Frontend:** React 19 + Vite, PWA with service worker, Socket.IO client, Hindi + English i18n, Capacitor Android wrapper. Deployed on Vercel.
+- **Backend:** Node 22, Express 5, Socket.IO, SQLite via `node:sqlite` (WAL, versioned migrations), Google Sign-In (ID-token flow, no client secret), web-push notifications.
+- **Infrastructure:** single Oracle Cloud VPS, pm2 with gated zero-downtime deploys and automatic rollback, nginx + TLS, self-hosted coturn for WebRTC NAT traversal, nightly SQLite backups shipped to Google Drive via rclone, Sentry error monitoring, daily digest alerts.
+- **Quality:** 39 backend tests (~84% line coverage), Playwright end-to-end tests that run the full flow in two browsers with fake camera and mic, CI on every push (backend tests, frontend build, e2e, npm audit, gitleaks).
+
+## Hard problems solved
+
+- **2,000 concurrent chatters on one small VPS.** Measured load test: 2,000/2,000 matched with zero failures, p95 match time 1.9 s (that is the arrival spread, not server delay), 54% of one CPU core, RSS under 300 MB. Full report in [docs/LOADTEST.md](docs/LOADTEST.md).
+- **Zero-downtime deploys with automatic rollback.** `deploy/deploy.sh` starts the new release on a spare port, smoke-tests it behind nginx, flips traffic only when it passes, and rolls back on failure. A parallel staging app on port 3101 gets the same pipeline.
+- **Anonymous by default, provably.** Strangers see only random aliases; the server relays text without storing it; video is peer-to-peer WebRTC with coturn as fallback. The test suite scans the database to prove no messages persist.
+- **Mutual consent enforced server-side.** Enjoy, extend, friend, video and name-reveal each require both sides; every socket event re-checks room membership and consent state, so no client can skip a step.
+- **Safety without moderators.** A report ends the chat and blocks the pair; repeated distinct reports suspend the account automatically; device-level bans stop instant re-registration; every admin action lands in an append-only audit log.
+- **A pm2 fork-mode gotcha.** pm2 loads fork-mode apps through `ProcessContainerFork.js`, so `process.argv[1]` never matched `server.js` and its self-start guard silently skipped startup. `deploy/pm2-entry.mjs` starts the server explicitly with the same shutdown handling.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    subgraph Clients
+        A[React PWA<br/>on Vercel]
+        B[Android app<br/>Capacitor]
+    end
+    subgraph VPS[Oracle Cloud VPS]
+        C[nginx + TLS]
+        D[Node 22 backend<br/>Express 5 + Socket.IO<br/>pm2]
+        E[(SQLite<br/>WAL)]
+        F[coturn<br/>TURN relay]
+    end
+    G[Google Sign-In]
+    H[Sentry]
+    I[Nightly backups<br/>rclone to Google Drive]
+    A <-->|HTTPS + WebSocket| C
+    B <-->|HTTPS + WebSocket| C
+    C --> D
+    D <--> E
+    A <-.->|WebRTC media: P2P or relayed| F
+    D --> G
+    D -.-> H
+    D --> I
+```
 
 ## How it fits together
 
@@ -55,16 +108,16 @@ Frontend: `frontend/.env.example` (`VITE_BACKEND_URL`, optional `VITE_SENTRY_DSN
 ## Deploy
 
 - **Frontend:** push to `main`; Vercel builds and serves https://lputv.vercel.app.
-- **Backend:** runs on an Oracle Cloud VPS under pm2 (app `uniconnect`, Node 22, port 3001, behind nginx at https://api.lpu.picapool.tech). `deploy/deploy.sh` fetches `main`, installs, gates the new release on a spare port with a smoke test, then reloads pm2 and auto-rolls back on failure. `deploy/deploy.sh --staging` deploys to a parallel staging app on port 3101. Layout: `/srv/uniconnect` (bare mirror, working clone, `releases/<sha>`, `current` symlink). See `docs/RUNBOOK.md`.
+- **Backend:** runs on an Oracle Cloud VPS under pm2 (app `lputv`, Node 22, port 3001, behind nginx at https://api.lpu.picapool.tech). `deploy/deploy.sh` fetches `main`, installs, gates the new release on a spare port with a smoke test, then reloads pm2 and auto-rolls back on failure. `deploy/deploy.sh --staging` deploys to a parallel staging app on port 3101. Layout: `/srv/lputv` (bare mirror, working clone, `releases/<sha>`, `current` symlink). See `docs/RUNBOOK.md`.
 - **Video:** coturn on the same host (`turn.lpu.picapool.tech`, UDP/TCP 3478, TLS 5349); the app advertises it via `TURN_URLS`.
 
 ### Production configuration
 
-Backend env lives in `/etc/uniconnect/production.env` (loaded via `ENV_FILE`; never committed). Names only - see `backend/.env.example` for the full list and meanings: `GOOGLE_CLIENT_ID`, `ADMIN_EMAILS`, `ALLOWED_ORIGINS`, `DB_PATH`, `TURN_URLS`/`TURN_SECRET`, `VAPID_*`, `ALERT_WEBHOOK_URL`, `SENTRY_DSN`, `GROQ_API_KEY`, `ANALYTICS_SALT`, `DEVICE_SALT`, `BACKUP_DIR`, `BACKUP_REMOTE`.
+Backend env lives in `/etc/lputv/production.env` (loaded via `ENV_FILE`; never committed). Names only - see `backend/.env.example` for the full list and meanings: `GOOGLE_CLIENT_ID`, `ADMIN_EMAILS`, `ALLOWED_ORIGINS`, `DB_PATH`, `TURN_URLS`/`TURN_SECRET`, `VAPID_*`, `ALERT_WEBHOOK_URL`, `SENTRY_DSN`, `GROQ_API_KEY`, `ANALYTICS_SALT`, `DEVICE_SALT`, `BACKUP_DIR`, `BACKUP_REMOTE`.
 
 ### Backups
 
-Nightly at 01:15 UTC (user crontab): `scripts/backup.mjs` snapshots the SQLite database, keeps the last 9 locally under `/srv/uniconnect/data/backups/`, and ships a copy to Google Drive via rclone (`gdrive:uniconnect-backups`). Backup config is in `deploy/crontab.txt`.
+Nightly at 01:15 UTC (user crontab): `scripts/backup.mjs` snapshots the SQLite database, keeps the last 9 locally under `/var/lib/lputv/backups/`, and ships a copy to Google Drive via rclone (`gdrive:uniconnect-backups`). Backup config is in `deploy/crontab.txt`.
 
 ### Monitoring
 
