@@ -85,7 +85,7 @@ export default function Dashboard({ user, friends, onlineIds, config, onUser, on
                                         <button className="btn btn-ghost" onClick={() => { setRenaming(false); setNameVal(user.name); }}>{t('dash.nameCancel')}</button>
                                     </div>
                                 ) : (
-                                    <h1 className="display me-name">{user.name}
+                                    <h1 className="display me-name"><span className="me-name-text">{user.name}</span>
                                         <button className="rename-btn" onClick={() => { setNameVal(user.name); setRenaming(true); }} aria-label={t('dash.rename')} title={t('dash.rename')}><Pencil /></button>
                                     </h1>
                                 )}
