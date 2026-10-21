@@ -1,4 +1,4 @@
-// UniConnect service worker: offline app shell and push notifications.
+// LpuTV service worker: offline app shell and push notifications.
 const SHELL = 'uc-shell-v2';
 const SHELL_FILES = ['/', '/favicon.svg', '/manifest.webmanifest', '/icons/icon-192.png'];
 
@@ -36,8 +36,8 @@ self.addEventListener('fetch', (e) => {
 
 self.addEventListener('push', (e) => {
     let data = {};
-    try { data = e.data.json(); } catch { data = { title: 'UniConnect', body: e.data?.text() }; }
-    e.waitUntil(self.registration.showNotification(data.title || 'UniConnect', {
+    try { data = e.data.json(); } catch { data = { title: 'LpuTV', body: e.data?.text() }; }
+    e.waitUntil(self.registration.showNotification(data.title || 'LpuTV', {
         body: data.body || '',
         tag: data.tag,
         icon: '/icons/icon-192.png',

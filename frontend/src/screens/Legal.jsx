@@ -18,7 +18,7 @@ const PAGES = {
         title: 'Privacy notice',
         body: (
             <>
-                <p>UniConnect is a non-profit student project. This notice explains what we hold about you, why, for how long, and your rights under India's Digital Personal Data Protection Act, 2023.</p>
+                <p>LpuTV is a non-profit student project. This notice explains what we hold about you, why, for how long, and your rights under India's Digital Personal Data Protection Act, 2023.</p>
                 <h2>What we store</h2>
                 <table className="legal-table">
                     <thead><tr><th>Data</th><th>Why</th><th>Kept for</th></tr></thead>
@@ -43,7 +43,7 @@ const PAGES = {
                     <li>Withdraw consent by deleting your account.</li>
                 </ul>
                 <h2>Age</h2>
-                <p>UniConnect is for people aged 18 and over. We do not knowingly allow anyone younger to use it; report accounts that seem underage.</p>
+                <p>LpuTV is for people aged 18 and over. We do not knowingly allow anyone younger to use it; report accounts that seem underage.</p>
                 <h2>Security and breaches</h2>
                 <p>Connections are encrypted in transit (HTTPS). Session tokens are stored hashed. If a personal data breach happens we will inform the Data Protection Board of India and affected users as the law requires.</p>
                 <h2>Contact</h2>
@@ -55,7 +55,7 @@ const PAGES = {
         title: 'Safety',
         body: (
             <>
-                <p>UniConnect pairs strangers, so it only works if people are decent to each other. These are the rules and the tools you have.</p>
+                <p>LpuTV pairs strangers, so it only works if people are decent to each other. These are the rules and the tools you have.</p>
                 <h2>Rules</h2>
                 <ul>
                     <li>No harassment, threats, hate speech or sexual content.</li>
@@ -86,14 +86,14 @@ const PAGES = {
         title: 'Terms',
         body: (
             <>
-                <p>By using UniConnect you agree to these terms.</p>
+                <p>By using LpuTV you agree to these terms.</p>
                 <ul>
                     <li>You are at least 18 years old.</li>
                     <li>You will follow the rules on the Safety page. We may suspend or remove accounts that break them, including automatically after multiple reports.</li>
                     <li>You are responsible for what you say and show. Do not share content you do not have the right to share.</li>
-                    <li>UniConnect is a free, non-profit student project provided as is. It may be unavailable at times and features may change.</li>
+                    <li>LpuTV is a free, non-profit student project provided as is. It may be unavailable at times and features may change.</li>
                     <li>We handle your data as described in the Privacy notice.</li>
-                    <li>You can stop using UniConnect and delete your account at any time.</li>
+                    <li>You can stop using LpuTV and delete your account at any time.</li>
                 </ul>
                 <h2>Contact</h2>
                 <Grievance />
@@ -109,7 +109,7 @@ export default function Legal({ page }) {
     return (
         <div className="interior legal">
             <header className="topbar">
-                <a href="/" className="wordmark-link" aria-label="UniConnect home"><Wordmark /></a>
+                <a href="/" className="wordmark-link" aria-label="LpuTV home"><Wordmark /></a>
                 <a href="/" className="btn btn-ghost"><ArrowLeft /> Back</a>
             </header>
             <main className="legal-body">

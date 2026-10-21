@@ -1,4 +1,4 @@
-// UniConnect admin panel. Vanilla JS, served by the API process at /admin.
+// LpuTV admin panel. Vanilla JS, served by the API process at /admin.
 // Every user-supplied string goes through esc() before it touches innerHTML.
 const API = '/admin/api';
 const KEY = 'uc_admin_token';

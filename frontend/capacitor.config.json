@@ -1,6 +1,6 @@
 {
   "appId": "com.lpuconnect.app",
-  "appName": "UniConnect",
+  "appName": "LpuTV",
   "webDir": "dist",
   "server": {
     "androidScheme": "https",

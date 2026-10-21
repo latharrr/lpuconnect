@@ -1,4 +1,4 @@
-// UniConnect backend entry point.
+// LpuTV backend entry point.
 import { createServer } from 'node:http';
 import { config, assertConfig } from './src/config.js';
 import { logger } from './src/logger.js';

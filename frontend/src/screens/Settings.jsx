@@ -34,7 +34,7 @@ export default function Settings({ config, onDeleted }) {
         try {
             const data = await api('/api/me/export');
             const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }));
-            const a = Object.assign(document.createElement('a'), { href: url, download: 'uniconnect-my-data.json' });
+            const a = Object.assign(document.createElement('a'), { href: url, download: 'lputv-my-data.json' });
             a.click();
             setTimeout(() => URL.revokeObjectURL(url), 1000);
         } catch (err) { toast(err.message); }

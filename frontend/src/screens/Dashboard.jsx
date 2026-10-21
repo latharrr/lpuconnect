@@ -39,7 +39,7 @@ export default function Dashboard({ user, friends, onlineIds, config, onUser, on
         const url = `${location.origin}/?ref=invite`;
         track('invite_shared', { via: navigator.share ? 'share' : 'copy' });
         try {
-            if (navigator.share) await navigator.share({ title: 'UniConnect', text: t('landing.promise'), url });
+            if (navigator.share) await navigator.share({ title: 'LpuTV', text: t('landing.promise'), url });
             else { await navigator.clipboard.writeText(url); toast(t('dash.inviteCopied')); }
         } catch { /* share sheet dismissed */ }
     }

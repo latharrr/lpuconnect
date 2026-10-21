@@ -1,5 +1,5 @@
 ---
-name: UniConnect
+name: LpuTV
 description: A coin-op photo booth for conversation. Two strangers, one booth, a countdown.
 colors:
   curtain-red: "#a3161a"
@@ -118,13 +118,13 @@ components:
     height: "48px"
 ---
 
-# Design System: UniConnect
+# Design System: LpuTV
 
 ## Overview
 
 **Creative North Star: "The Photo Booth"**
 
-UniConnect is a coin-op photo booth for conversation. Outside the booth is a pleated red curtain, with an enamel instruction plate and a delivery slot that feeds a four-frame strip. Inside is a warm near-black room lit by one tungsten lamp. Every screen sits on one side of that curtain or the other. The landing page is the booth's exterior. The dashboard, matching, chat and video screens are its interior.
+LpuTV is a coin-op photo booth for conversation. Outside the booth is a pleated red curtain, with an enamel instruction plate and a delivery slot that feeds a four-frame strip. Inside is a warm near-black room lit by one tungsten lamp. Every screen sits on one side of that curtain or the other. The landing page is the booth's exterior. The dashboard, matching, chat and video screens are its interior.
 
 The mechanism is the identity. Strangers are **latent prints**: fogged silver frames with a "?" until both people accept the friend request. Then the print **develops** into crisp initials. A match fires the booth's **flash**. The timer is the booth's countdown lamp. The rest of the interior stays quiet and readable, because the chat is where people actually spend their time.
 

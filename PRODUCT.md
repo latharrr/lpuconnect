@@ -14,7 +14,7 @@ University students, at any campus, who want to talk to someone new without the 
 
 ## Product Purpose
 
-UniConnect pairs two students at random for an anonymous text chat, with an optional video call. Each random chat runs on a 10-minute timer that both people can agree to extend. If both people tap "Enjoying this?", they unlock the option to add each other as friends, and accepting a friend request reveals both identities. Friends can then open a direct chat any time.
+LpuTV pairs two students at random for an anonymous text chat, with an optional video call. Each random chat runs on a 10-minute timer that both people can agree to extend. If both people tap "Enjoying this?", they unlock the option to add each other as friends, and accepting a friend request reveals both identities. Friends can then open a direct chat any time.
 
 Success means a student gets from landing to a live conversation in seconds, feels safe enough to stay, and comes back to talk to friends.
 
@@ -39,7 +39,7 @@ Anonymity comes first, and identity is earned by both sides. Nobody is revealed 
 
 ## Brand Commitments
 
-- The name is **UniConnect**. It is campus-neutral, so there are no LPU or single-university references in the UI.
+- The name is **LpuTV** (renamed from UniConnect on 2026-10-21). It is no longer campus-neutral; avoid adding further single-university references beyond the name.
 - The product is described as a non-profit student project running on a free-tier server (wake-up overlay copy).
 
 ## Evidence on Hand

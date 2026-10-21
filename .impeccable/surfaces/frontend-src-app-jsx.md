@@ -5,7 +5,7 @@ primary_target: "frontend/src/App.jsx"
 related_targets: []
 ---
 
-# UniConnect app (all screens)
+# LpuTV app (all screens)
 
 Scope: every screen in frontend/src/App.jsx: landing, dashboard, random matching, direct calling, chat, video, incoming-call/report plates, server wake-up. Landing is Persuade; the in-app screens are Operate and inherit the world quietly.
 
@@ -13,7 +13,7 @@ Audience/job: university students on phones, often at night, who want a low-stak
 
 ## Direction contract
 
-THESIS: UniConnect is a coin-op photo booth for conversation. Two strangers, one booth, a countdown. Faces develop only when both say yes. It refuses the dark-chat-app-with-neon-accent default.
+THESIS: LpuTV is a coin-op photo booth for conversation. Two strangers, one booth, a countdown. Faces develop only when both say yes. It refuses the dark-chat-app-with-neon-accent default.
 
 OWN-WORLD: Pleated curtain red (#a3161a) owns the landing; the booth interior is a warm near-black lit by one tungsten amber lamp (#ffb547). Strip paper (#fbfaf6) with silver emulsion (#8f8b84). Controls are enamel instruction plates and square push-buttons with small printed labels at one constant size. Third colour only for live/online. 4px unit everywhere. Display face: Big Shoulders Display, uppercase. UI/body face: Archivo.
 

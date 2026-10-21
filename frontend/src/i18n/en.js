@@ -22,7 +22,7 @@ export default {
     'how.3.body': 'If you both tap "Enjoying this", you can extend the timer or add each other as friends.',
     'how.4.title': 'Names develop',
     'how.4.body': 'Once you both accept the friend request, names are revealed and you can chat any time.',
-    'foot.project': 'UniConnect is a non-profit student project.',
+    'foot.project': 'LpuTV is a non-profit student project.',
     'foot.safety': 'Safety',
     'foot.privacy': 'Privacy',
     'foot.terms': 'Terms',
@@ -212,7 +212,7 @@ export default {
 
     // System
     'wake.title': 'Warming up the booth',
-    'wake.body': "UniConnect is a non-profit student project on a free-tier server. It was asleep, so it's starting up now. This usually takes about a minute.",
+    'wake.body': "LpuTV is a non-profit student project on a free-tier server. It was asleep, so it's starting up now. This usually takes about a minute.",
     'wake.est': 'Estimated time',
     'wake.keep': 'Keep this page open. It connects on its own.',
     'boot.opening': 'Opening the booth…',

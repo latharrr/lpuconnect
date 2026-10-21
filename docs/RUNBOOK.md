@@ -1,4 +1,4 @@
-# UniConnect runbook
+# LpuTV runbook
 
 One page for when something is wrong. Commands assume the VPS layout in `deploy/` (pm2, nginx, `/srv/uniconnect`). On Render, use the dashboard equivalents noted in brackets.
 
@@ -7,7 +7,7 @@ One page for when something is wrong. Commands assume the VPS layout in `deploy/
 | Thing | Location |
 |---|---|
 | Frontend | Vercel project `lpuconnect`, live at https://lputv.vercel.app (deploys on push to `main`) |
-| API (today) | Render, https://lpuconnect.onrender.com (deploys on push to `main`; free tier, disk is wiped on every deploy/restart) |
+| API (today) | VPS: pm2 `uniconnect` behind nginx, https://api.lpu.picapool.tech (deploy: `deploy/deploy.sh`) |
 | API (target) | VPS: pm2 app `uniconnect` on :3001 behind nginx; staging `uniconnect-staging` on :3101 |
 | Config | `/etc/uniconnect/production.env` and `staging.env` (template: `backend/.env.example`) [Render: Environment tab] |
 | Database | `DB_PATH` (SQLite, WAL). Local backups in `BACKUP_DIR`, 14 kept, plus nightly off-site copy via rclone |

@@ -1,7 +1,7 @@
 {
-  "name": "uniconnect-backend",
+  "name": "lputv-backend",
   "version": "2.0.0",
-  "description": "UniConnect API, Socket.IO matching and signalling server",
+  "description": "LpuTV API, Socket.IO matching and signalling server",
   "type": "module",
   "main": "server.js",
   "private": true,

@@ -1,6 +1,6 @@
 {
-  "name": "UniConnect",
-  "short_name": "UniConnect",
+  "name": "LpuTV",
+  "short_name": "LpuTV",
   "description": "Ten-minute anonymous chats with university students. Names stay hidden until you both say yes.",
   "start_url": "/",
   "scope": "/",

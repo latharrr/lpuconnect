@@ -34,7 +34,7 @@ meRouter.patch('/', requireAuth(), (req, res) => {
 
 meRouter.get('/export', requireAuth({ allowBanned: true }), (req, res) => {
     track('data_export', { email: req.email });
-    res.set('Content-Disposition', 'attachment; filename="uniconnect-my-data.json"');
+    res.set('Content-Disposition', 'attachment; filename="lputv-my-data.json"');
     res.json(exportUser(req.email));
 });
 

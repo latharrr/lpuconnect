@@ -160,7 +160,7 @@ function onConnection(socket) {
         emitToUser(friendEmail, 'direct_invite', { from: me });
         notify(friendEmail, {
             kind: 'direct', subject: me.id, capMs: 30 * 60_000,
-            title: `${me.name} wants to chat`, body: 'Open UniConnect to join them.', url: `/?direct=${me.id}`,
+            title: `${me.name} wants to chat`, body: 'Open LpuTV to join them.', url: `/?direct=${me.id}`,
         }).catch(() => {});
         return { ok: true, waiting: true, room: room.id };
     });

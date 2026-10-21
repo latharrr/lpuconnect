@@ -1,6 +1,6 @@
 # Data inventory (DPDP Act 2023)
 
-What UniConnect holds, why, where, and for how long. Keep this in sync with `/privacy` (`frontend/src/screens/Legal.jsx`) and the schema in `backend/migrations/`.
+What LpuTV holds, why, where, and for how long. Keep this in sync with `/privacy` (`frontend/src/screens/Legal.jsx`) and the schema in `backend/migrations/`.
 
 | Data | Table / place | Purpose | Lawful basis | Retention | Who can see it |
 |---|---|---|---|---|---|

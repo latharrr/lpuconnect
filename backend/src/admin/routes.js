@@ -214,7 +214,7 @@ adminRouter.get('/digest', (_req, res) => {
 });
 
 adminRouter.post('/alerts/test', async (req, res) => {
-    const ok = await sendAlert(`Test alert from the UniConnect admin panel (${req.admin}).`);
+    const ok = await sendAlert(`Test alert from the LpuTV admin panel (${req.admin}).`);
     audit(req.admin, 'alert_test', null, { delivered: ok });
     res.json({ delivered: ok, configured: !!config.alertWebhookUrl });
 });

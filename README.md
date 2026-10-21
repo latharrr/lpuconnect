@@ -1,8 +1,8 @@
-# UniConnect
+# LpuTV
 
 A photo booth for conversation. Two university students are paired at random for a ten-minute anonymous chat, with optional video. If both tap "Enjoying this" they can add each other, and names are revealed only when both accept.
 
-**Live:** https://lputv.vercel.app · **API:** https://lpuconnect.onrender.com (`/health`, `/admin`)
+**Live:** https://lputv.vercel.app · **API:** https://api.lpu.picapool.tech (`/health`, `/admin`)
 
 ## How it fits together
 

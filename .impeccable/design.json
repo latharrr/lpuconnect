@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "generatedAt": "2026-10-19T19:11:36.416262+00:00",
-  "title": "Design System: UniConnect",
+  "title": "Design System: LpuTV",
   "extensions": {
     "colorMeta": {
       "curtain-red": {
@@ -217,7 +217,7 @@
   ],
   "narrative": {
     "northStar": "The Photo Booth",
-    "overview": "UniConnect is a coin-op photo booth for conversation. Outside the booth is a pleated red curtain, with an enamel instruction plate and a delivery slot that feeds a four-frame strip. Inside is a warm near-black room lit by one tungsten lamp. Every screen sits on one side of that curtain or the other. The landing page is the booth's exterior. The dashboard, matching, chat and video screens are its interior.\n\nThe mechanism is the identity. Strangers are **latent prints**: fogged silver frames with a \"?\" until both people accept the friend request. Then the print **develops** into crisp initials. A match fires the booth's **flash**. The timer is the booth's countdown lamp. The rest of the interior stays quiet and readable, because the chat is where people actually spend their time.",
+    "overview": "LpuTV is a coin-op photo booth for conversation. Outside the booth is a pleated red curtain, with an enamel instruction plate and a delivery slot that feeds a four-frame strip. Inside is a warm near-black room lit by one tungsten lamp. Every screen sits on one side of that curtain or the other. The landing page is the booth's exterior. The dashboard, matching, chat and video screens are its interior.\n\nThe mechanism is the identity. Strangers are **latent prints**: fogged silver frames with a \"?\" until both people accept the friend request. Then the print **develops** into crisp initials. A match fires the booth's **flash**. The timer is the booth's countdown lamp. The rest of the interior stays quiet and readable, because the chat is where people actually spend their time.",
     "keyCharacteristics": [
       "Two inks do the work: curtain red and strip paper/silver. Tungsten amber is the only warm light. Green appears only for live/online.",
       "Condensed uppercase signage (Big Shoulders Display) for headings, and a workhorse grotesque (Archivo) for everything people read.",

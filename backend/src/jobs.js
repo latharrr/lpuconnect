@@ -82,7 +82,7 @@ export function digest(day) {
     const rows = all('SELECT metric, value FROM daily_stats WHERE day = ?', day);
     const m = Object.fromEntries(rows.map(r => [r.metric, r.value]));
     const open = get("SELECT COUNT(*) AS n FROM reports WHERE status = 'open'").n;
-    return `UniConnect daily digest for ${day}: ${m.dau ?? 0} active users, ${m.new_users ?? 0} new, ${m.matches ?? 0} matches, `
+    return `LpuTV daily digest for ${day}: ${m.dau ?? 0} active users, ${m.new_users ?? 0} new, ${m.matches ?? 0} matches, `
         + `median wait ${m.median_wait_ms ? Math.round(m.median_wait_ms / 1000) + 's' : 'n/a'}, ${m.friend_unlocks ?? 0} friend unlocks, `
         + `${m.reports ?? 0} reports (${open} open), ${m.errors ?? 0} socket errors.`;
 }
@@ -110,7 +110,7 @@ export async function spikeCheck(t = Date.now()) {
         const base = get(sql, t - 25 * hour, t - hour).n / 24;
         if (recent >= floor && recent > base * 3) fired.push(`${name}: ${recent} in the last hour (usual ${base.toFixed(1)}/h)`);
     }
-    if (fired.length) await sendAlert(`UniConnect alert. ${fired.join('; ')}`);
+    if (fired.length) await sendAlert(`LpuTV alert. ${fired.join('; ')}`);
     return fired;
 }
 
