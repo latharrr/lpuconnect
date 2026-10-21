@@ -1,0 +1,159 @@
+{
+  "at": "2026-10-21",
+  "url": "isolated copy of release 6bd15470bfae on production VPS (2 vCPU / 12 GB), clients on-box",
+  "node": "v22",
+  "results": [
+    {
+      "users": 500,
+      "loggedIn": 500,
+      "connected": 500,
+      "matched": 500,
+      "failed": 0,
+      "matchMs": {
+        "p50": 996,
+        "p95": 1920,
+        "max": 1996
+      },
+      "messagesDelivered": 5000,
+      "server": {
+        "peakCpuPct": 0,
+        "peakRssMb": 125,
+        "peakHeapMb": 40,
+        "peakLoopLagMs": 63
+      }
+    },
+    {
+      "users": 1000,
+      "loggedIn": 1000,
+      "connected": 1000,
+      "matched": 1000,
+      "failed": 0,
+      "matchMs": {
+        "p50": 982,
+        "p95": 1872,
+        "max": 1999
+      },
+      "messagesDelivered": 10000,
+      "server": {
+        "peakCpuPct": 0,
+        "peakRssMb": 143,
+        "peakHeapMb": 51,
+        "peakLoopLagMs": 71
+      }
+    },
+    {
+      "users": 2000,
+      "loggedIn": 2000,
+      "connected": 2000,
+      "matched": 2000,
+      "failed": 0,
+      "matchMs": {
+        "p50": 966,
+        "p95": 1959,
+        "max": 2069
+      },
+      "messagesDelivered": 20000,
+      "server": {
+        "peakCpuPct": 0,
+        "peakRssMb": 245,
+        "peakHeapMb": 134,
+        "peakLoopLagMs": 74
+      }
+    },
+    {
+      "users": 3000,
+      "loggedIn": 3000,
+      "connected": 3000,
+      "matched": 3000,
+      "failed": 0,
+      "matchMs": {
+        "p50": 1037,
+        "p95": 2410,
+        "max": 2445
+      },
+      "messagesDelivered": 30000,
+      "server": {
+        "peakCpuPct": 0,
+        "peakRssMb": 257,
+        "peakHeapMb": 116,
+        "peakLoopLagMs": 181
+      }
+    },
+    {
+      "users": 4000,
+      "loggedIn": 4000,
+      "connected": 4000,
+      "matched": 4000,
+      "failed": 0,
+      "matchMs": {
+        "p50": 1158,
+        "p95": 2793,
+        "max": 3053
+      },
+      "messagesDelivered": 39940,
+      "server": {
+        "peakCpuPct": 0,
+        "peakRssMb": 376,
+        "peakHeapMb": 251,
+        "peakLoopLagMs": 100
+      }
+    },
+    {
+      "users": 6000,
+      "loggedIn": 6000,
+      "connected": 6000,
+      "matched": 6000,
+      "failed": 0,
+      "matchMs": {
+        "p50": 1654,
+        "p95": 3591,
+        "max": 3718
+      },
+      "messagesDelivered": 59056,
+      "server": {
+        "peakCpuPct": 0,
+        "peakRssMb": 387,
+        "peakHeapMb": 211,
+        "peakLoopLagMs": 116
+      }
+    },
+    {
+      "users": 8000,
+      "loggedIn": 8000,
+      "connected": 8000,
+      "matched": 8000,
+      "failed": 0,
+      "matchMs": {
+        "p50": 2083,
+        "p95": 4365,
+        "max": 4849
+      },
+      "messagesDelivered": 74403,
+      "server": {
+        "peakCpuPct": 0,
+        "peakRssMb": 0,
+        "peakHeapMb": 0,
+        "peakLoopLagMs": 0
+      }
+    },
+    {
+      "users": 10000,
+      "loggedIn": 10000,
+      "connected": 10000,
+      "matched": 10000,
+      "failed": 0,
+      "matchMs": {
+        "p50": 2565,
+        "p95": 5212,
+        "max": 5607
+      },
+      "messagesDelivered": 86315,
+      "server": {
+        "peakCpuPct": 0,
+        "peakRssMb": 0,
+        "peakHeapMb": 0,
+        "peakLoopLagMs": 0
+      }
+    }
+  ]
+}

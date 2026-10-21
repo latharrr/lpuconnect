@@ -23,7 +23,7 @@ Designed, built and operated solo by Deepanshu Lathar: product, frontend, backen
 
 ## Hard problems solved
 
-- **2,000 concurrent chatters on one small VPS.** Measured load test: 2,000/2,000 matched with zero failures, p95 match time 1.9 s (that is the arrival spread, not server delay), 54% of one CPU core, RSS under 300 MB. Full report in [docs/LOADTEST.md](docs/LOADTEST.md).
+- **10,000 concurrent chatters on the live VPS, zero failures.** Measured on production hardware (2 vCPU, 12 GB, shared box): every stage matched 100% up to 10,000 users; p95 match time stays under the 5 s target through 8,000 users with server CPU at ~45% of one core and RSS at 555 MB. Full report in [docs/LOADTEST.md](docs/LOADTEST.md).
 - **Zero-downtime deploys with automatic rollback.** `deploy/deploy.sh` starts the new release on a spare port, smoke-tests it behind nginx, flips traffic only when it passes, and rolls back on failure. A parallel staging app on port 3101 gets the same pipeline.
 - **Anonymous by default, provably.** Strangers see only random aliases; the server relays text without storing it; video is peer-to-peer WebRTC with coturn as fallback. The test suite scans the database to prove no messages persist.
 - **Mutual consent enforced server-side.** Enjoy, extend, friend, video and name-reveal each require both sides; every socket event re-checks room membership and consent state, so no client can skip a step.

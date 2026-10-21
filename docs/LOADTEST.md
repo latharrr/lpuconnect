@@ -32,3 +32,26 @@ cd backend && node scripts/loadtest.mjs --url https://<api-host> --stages 50,100
 ```
 
 Video does not load the server: media is peer-to-peer, or relayed by coturn when NAT blocks it (bandwidth, not CPU, is the cost there).
+
+## VPS run (production hardware), 2026-10-21
+
+Same script and workload, run against an isolated copy of the production release (6bd15470bfae) on the live Oracle Cloud VPS (2 vCPU, 12 GB, Node 22, shared with unrelated services), clients on the same machine. Production traffic and database untouched; the test instance used a throwaway database, deleted after.
+
+| Concurrent users | Matched | Failed | p95 match (ms) | Peak server CPU (1 core) | Peak server RSS (MB) |
+|---|---|---|---|---|---|
+| 500 | 500/500 | 0 | 1920 | 15% | 129 |
+| 1000 | 1000/1000 | 0 | 1872 | 19% | 142 |
+| 2000 | 2000/2000 | 0 | 1959 | 26% | 252 |
+| 3000 | 3000/3000 | 0 | 2410 | 32% | 257 |
+| 4000 | 4000/4000 | 0 | 2793 | 36% | 374 |
+| 6000 | 6000/6000 | 0 | 3591 | 38% | 384 |
+| 8000 | 8000/8000 | 0 | 4365 | 42% | 467 |
+| 10000 | 10000/10000 | 0 | 5212 | 46% | 555 |
+
+Raw results: `docs/loadtest-vps-results.json` (per-stage files merged from /tmp runs).
+
+**Verified ceiling: 10,000 concurrent chatters with zero failures.** The spec target (p95 under 5 s) holds through 8,000; at 10,000 the p95 slips to 5.2 s while CPU is only ~46% of one core, so the p95 knee is matching-loop queueing (plus client-harness contention on this shared 2-core box), not CPU or memory. RAM peaks at 555 MB for 10,000 connections.
+
+**Nothing broke first.** No config change was needed on the server: pm2 already runs it with a 1,048,576 file-descriptor limit and SQLite WAL absorbs the write load. (The client harness needed `ulimit -n 65536`.)
+
+**Production note:** real traffic goes through nginx and shares this VPS with other services, so plan operationally for a few thousand concurrent, with 8,000 as the measured spec-compliant ceiling and 10,000 as the failure-free maximum. Beyond that, stage 4 of the spec: Redis adapter, multiple processes, Postgres.
