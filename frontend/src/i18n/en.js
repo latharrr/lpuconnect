@@ -226,9 +226,8 @@ export default {
     'report.leave': 'Back to friends',
 
     // System
-    'wake.title': 'Warming up the booth',
-    'wake.body': "LpuTV is a non-profit student project on a free-tier server. It was asleep, so it's starting up now. This usually takes about a minute.",
-    'wake.est': 'Estimated time',
+    'wake.title': 'Taking longer to connect',
+    'wake.body': 'The app is having trouble reaching the server. This usually clears up in a few seconds.',
     'wake.keep': 'Keep this page open. It connects on its own.',
     'boot.opening': 'Opening the booth…',
     'banned.title': 'Account suspended',
