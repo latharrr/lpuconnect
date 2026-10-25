@@ -91,7 +91,7 @@ Admin panel locally: start the backend with `ADMIN_DEV_TOKEN=dev`, open http://l
 ## Tests
 
 ```bash
-cd backend && npm test                 # 39 tests: auth, room authorisation (B1-B6), queue, cleanup, migrations, backups, admin, CSV
+cd backend && npm test                 # 47 tests: auth, room authorisation (B1-B6), queue, cleanup, migrations, backups, admin, CSV
 cd backend && npm run test:coverage    # ~84% of lines
 cd frontend && npm run lint && npm run build
 cd e2e && npm install && npx playwright install chromium && npx playwright test
