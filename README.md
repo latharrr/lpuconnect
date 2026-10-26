@@ -8,6 +8,14 @@ LpuTV is an anonymous-first chat booth for university students: two people are p
 
 Designed, built and operated solo by Deepanshu Lathar: product, frontend, backend, realtime infrastructure, deployment and monitoring.
 
+| | |
+|---|---|
+| **Status** | Live at lputv.vercel.app; the backend runs on a single VPS |
+| **Stack** | React 19 + Vite PWA, Node 22 + Express 5 + Socket.IO, SQLite (WAL), WebRTC with coturn |
+| **Tests** | 47 backend tests (about 84% line coverage), two-browser Playwright end-to-end flow, CI with npm audit and gitleaks |
+| **Load test** | 10,000 simulated users against a copy of the release on the production VPS (clients on the same machine), details in [docs/LOADTEST.md](docs/LOADTEST.md) |
+| **My role** | Everything: product, frontend, backend, realtime, deployment, monitoring |
+
 ## Screenshots
 
 | Landing | Dashboard | A chat |
