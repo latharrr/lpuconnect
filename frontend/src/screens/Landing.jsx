@@ -248,6 +248,7 @@ export default function Landing({ config, onAuthed }) {
                             <a href="/safety">{t('foot.safety')}</a>
                             <a href="/privacy">{t('foot.privacy')}</a>
                             <a href="/terms">{t('foot.terms')}</a>
+                            <a href="https://rzp.io/rzp/lathar" target="_blank" rel="noopener noreferrer">{t('foot.support')}</a>
                             <button className="link-btn" onClick={() => setLang(lang === 'en' ? 'hi' : 'en')}>
                                 <Languages aria-hidden="true" /> {t('lang.switch')}
                             </button>
