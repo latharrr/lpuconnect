@@ -38,6 +38,7 @@ export default {
     'foot.safety': 'Safety',
     'foot.privacy': 'Privacy',
     'foot.terms': 'Terms',
+    'foot.support': 'Support me',
     'lang.switch': 'हिन्दी',
 
     // Onboarding

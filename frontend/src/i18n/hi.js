@@ -38,6 +38,7 @@ export default {
     'foot.safety': 'सुरक्षा',
     'foot.privacy': 'प्राइवेसी',
     'foot.terms': 'शर्तें',
+    'foot.support': 'मेरा सहयोग करें',
     'lang.switch': 'English',
 
     'onb.step': 'चरण {n} / 3',
