@@ -434,6 +434,12 @@ export function kickUser(email, reason) {
     }
 }
 
+// Unfriending or blocking from the friends list also ends a chat the pair has open.
+export function closeDirectChat(a, b, reason, actorEmail) {
+    const room = rooms?.rooms.get(rooms.direct.get(MatchQueue.pairKey(a, b)));
+    if (room) rooms.close(room, reason, actorEmail);
+}
+
 export function notifyFriendsChanged(email) {
     if (io) emitToUser(email, 'friends_changed', {});
 }

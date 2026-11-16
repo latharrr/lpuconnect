@@ -6,7 +6,7 @@ import { revokeAllFor } from '../sessions.js';
 import { track } from '../events.js';
 import { HttpError } from '../errors.js';
 import { analyticsId, clampText, now } from '../util.js';
-import { kickUser, notifyFriendsChanged } from '../realtime/index.js';
+import { kickUser, notifyFriendsChanged, closeDirectChat } from '../realtime/index.js';
 
 export const BIO_MAX = 200;
 export const NAME_MAX = 60;
@@ -68,6 +68,7 @@ meRouter.delete('/friends/:id', requireAuth(), (req, res) => {
     const other = emailByPublicId(req.params.id);
     if (!other || !areFriends(req.email, other)) throw new HttpError(404, 'not_found');
     removeFriendship(req.email, other);
+    closeDirectChat(req.email, other, 'left', req.email);
     notifyFriendsChanged(other);
     res.json({ friends: friendsOf(req.email) });
 });
@@ -76,6 +77,7 @@ meRouter.post('/friends/:id/block', requireAuth(), (req, res) => {
     const other = emailByPublicId(req.params.id);
     if (!other || !areFriends(req.email, other)) throw new HttpError(404, 'not_found');
     block(req.email, other);
+    closeDirectChat(req.email, other, 'block', req.email);
     track('block', { email: req.email, props: { from: 'friends' } });
     notifyFriendsChanged(other);
     res.json({ friends: friendsOf(req.email) });
