@@ -75,7 +75,11 @@ export class Rooms {
             this.direct.set(key, room.id);
         }
         const existing = room.members.get(email);
-        if (existing) this.unindex(existing.socketId, room.id);
+        if (existing) {
+            // A seat re-taken during the reconnect grace must not be closed by the old timer.
+            if (existing.grace) clearTimeout(existing.grace);
+            this.unindex(existing.socketId, room.id);
+        }
         const m = this.member(email, socket);
         room.members.set(email, m);
         this.attach(room, m);

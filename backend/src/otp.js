@@ -101,7 +101,7 @@ function recordOutcome(outcome) {
     const notOnWa = fails.filter((o) => o.kind === 'not_on_whatsapp');
     let reason = null;
     if (hardFails.length >= 5) reason = 'repeated send failures';
-    else if (state.outcomes.length >= 10 && notOnWa.length / state.outcomes.length > 0.3) reason = 'not-on-WhatsApp rate above 30%';
+    else if (recent.length >= 10 && notOnWa.length / recent.length > 0.3) reason = 'not-on-WhatsApp rate above 30%';
     if (reason && !state.disabled) {
         state.disabled = true;
         logger.error({ reason }, 'OTP kill switch engaged');

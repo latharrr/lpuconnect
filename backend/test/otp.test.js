@@ -100,6 +100,14 @@ test('otp: kill switch engages on repeated send failures', () => {
     __test.state.outcomes.length = 0;
 });
 
+test('otp: kill switch judges the not-on-WhatsApp rate over the recent window', () => {
+    for (let i = 0; i < 30; i++) __test.recordOutcome({ ok: true });
+    for (let i = 0; i < 7; i++) __test.recordOutcome({ ok: false, kind: 'not_on_whatsapp' });
+    assert.equal(__test.state.disabled, true, '7 of the last 20 is above 30%');
+    __test.state.disabled = false;
+    __test.state.outcomes.length = 0;
+});
+
 test('otp: codes are stored only as HMACs', async () => {
     const ph = phone();
     const { session, code } = await requestAndCode(ph);
